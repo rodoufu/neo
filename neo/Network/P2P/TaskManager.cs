@@ -6,6 +6,7 @@ using Neo.Network.P2P.Payloads;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Akka.DI.Core;
 
 namespace Neo.Network.P2P
 {
@@ -154,7 +155,8 @@ namespace Neo.Network.P2P
 
         public static Props Props(NeoSystem system)
         {
-            return Akka.Actor.Props.Create(() => new TaskManager(system)).WithMailbox("task-manager-mailbox");
+            return system.ActorSystem.DI().Props<TaskManager>().WithMailbox("task-manager-mailbox");
+//            return Akka.Actor.Props.Create(() => new TaskManager(system)).WithMailbox("task-manager-mailbox");
         }
 
         private void RequestTasks(TaskSession session)

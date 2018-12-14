@@ -10,6 +10,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
+using Akka.DI.Core;
 
 namespace Neo.Network.P2P
 {
@@ -176,7 +177,8 @@ namespace Neo.Network.P2P
 
         public static Props Props(NeoSystem system)
         {
-            return Akka.Actor.Props.Create(() => new LocalNode(system));
+            return system.ActorSystem.DI().Props<LocalNode>();
+//            return Akka.Actor.Props.Create(() => new LocalNode(system));
         }
 
         protected override Props ProtocolProps(object connection, IPEndPoint remote, IPEndPoint local)

@@ -8,29 +8,49 @@ using Neo.Plugins;
 using Neo.Wallets;
 using System;
 using System.Net;
+using Akka.DI.AutoFac;
+using Autofac;
+using SQLitePCL;
 
 namespace Neo
 {
     public class NeoSystem : IDisposable
     {
-        public ActorSystem ActorSystem { get; } = ActorSystem.Create(nameof(NeoSystem),
-            $"akka {{ log-dead-letters = off }}" +
-            $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
-            $"task-manager-mailbox {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
-            $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
-            $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
-            $"consensus-service-mailbox {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}");
+        public ActorSystem ActorSystem { get; }
+
         public IActorRef Blockchain { get; }
         public IActorRef LocalNode { get; }
         internal IActorRef TaskManager { get; }
+
         public IActorRef Consensus { get; private set; }
         public RpcServer RpcServer { get; private set; }
 
         public NeoSystem(Store store)
         {
+            var builder = new Autofac.ContainerBuilder();
+            builder.Register(x => this);
+            builder.Register(x => store);
+            builder.RegisterType<Blockchain>().AsSelf();
+            builder.RegisterType<LocalNode>().AsSelf();
+            builder.RegisterType<TaskManager>().AsSelf();
+            
+            var container = builder.Build();
+
+            ActorSystem = ActorSystem.Create(nameof(NeoSystem),
+                $"akka {{ log-dead-letters = off }}" +
+                $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
+                $"task-manager-mailbox {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
+                $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
+                $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
+                $"consensus-service-mailbox {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}");
+            ActorSystem.UseAutofac(container);
+
+            var propsResolver = new AutoFacDependencyResolver(container, ActorSystem);
+
             this.Blockchain = ActorSystem.ActorOf(Ledger.Blockchain.Props(this, store));
             this.LocalNode = ActorSystem.ActorOf(Network.P2P.LocalNode.Props(this));
             this.TaskManager = ActorSystem.ActorOf(Network.P2P.TaskManager.Props(this));
+
             Plugin.LoadPlugins(this);
         }
 
@@ -56,7 +76,8 @@ namespace Neo
             });
         }
 
-        public void StartRpc(IPAddress bindAddress, int port, Wallet wallet = null, string sslCert = null, string password = null,
+        public void StartRpc(IPAddress bindAddress, int port, Wallet wallet = null, string sslCert = null,
+            string password = null,
             string[] trustedAuthorities = null, Fixed8 maxGasInvoke = default(Fixed8))
         {
             RpcServer = new RpcServer(this, wallet, maxGasInvoke);

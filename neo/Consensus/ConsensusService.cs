@@ -12,6 +12,7 @@ using Neo.Wallets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Akka.DI.Core;
 
 namespace Neo.Consensus
 {
@@ -325,6 +326,7 @@ namespace Neo.Consensus
 
         public static Props Props(NeoSystem system, Wallet wallet)
         {
+//            return system.ActorSystem.DI().Props<ConsensusService>().WithMailbox("consensus-service-mailbox");
             return Akka.Actor.Props.Create(() => new ConsensusService(system, wallet)).WithMailbox("consensus-service-mailbox");
         }
 

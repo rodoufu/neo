@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Configuration;
+using Akka.DI.Core;
 using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
@@ -662,7 +663,8 @@ namespace Neo.Ledger
 
         public static Props Props(NeoSystem system, Store store)
         {
-            return Akka.Actor.Props.Create(() => new Blockchain(system, store)).WithMailbox("blockchain-mailbox");
+            return system.ActorSystem.DI().Props<Blockchain>().WithMailbox("blockchain-mailbox");
+//            return Akka.Actor.Props.Create(() => new Blockchain(system, store)).WithMailbox("blockchain-mailbox");
         }
 
         private void SaveHeaderHashList(Snapshot snapshot = null)
