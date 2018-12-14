@@ -32,14 +32,23 @@ namespace Neo.Consensus
         public byte[][] Signatures;
         public byte[] ExpectedView;
         private KeyPair KeyPair;
-        private readonly Wallet wallet;
+        private Wallet _wallet;
+
+        public Wallet Wallet
+        {
+            private get => _wallet;
+            set
+            {
+                if (_wallet != null)
+                {
+                    throw new ArgumentException("Wallet value already initialized.");
+                }
+
+                _wallet = value;
+            }
+        }
 
         public int M => Validators.Length - (Validators.Length - 1) / 3;
-
-        public ConsensusContext(Wallet wallet)
-        {
-            this.wallet = wallet;
-        }
 
         public void ChangeView(byte view_number)
         {
@@ -140,7 +149,7 @@ namespace Neo.Consensus
             try
             {
                 sc = new ContractParametersContext(payload);
-                wallet.Sign(sc);
+                Wallet.Sign(sc);
             }
             catch (InvalidOperationException)
             {
@@ -186,7 +195,7 @@ namespace Neo.Consensus
             KeyPair = null;
             for (int i = 0; i < Validators.Length; i++)
             {
-                WalletAccount account = wallet.GetAccount(Validators[i]);
+                WalletAccount account = Wallet.GetAccount(Validators[i]);
                 if (account?.HasKey == true)
                 {
                     MyIndex = i;
@@ -208,7 +217,7 @@ namespace Neo.Consensus
             {
                 AssetId = Blockchain.UtilityToken.Hash,
                 Value = amount_netfee,
-                ScriptHash = wallet.GetChangeAddress()
+                ScriptHash = Wallet.GetChangeAddress()
             } };
             while (true)
             {

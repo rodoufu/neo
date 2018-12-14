@@ -23,7 +23,7 @@ namespace Neo.UnitTests
             Assert.IsNotNull(neoSystem.ActorSystem);
             Assert.IsNotNull(neoSystem.Blockchain);
             Assert.IsNotNull(neoSystem.LocalNode);
-            
+
             neoSystem.Blockchain.Tell("oi", neoSystem.LocalNode);
         }
     }

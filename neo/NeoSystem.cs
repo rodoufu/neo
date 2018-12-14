@@ -16,6 +16,8 @@ namespace Neo
 {
     public class NeoSystem : IDisposable
     {
+        private NeoContainer _neoContainer;
+
         public ActorSystem ActorSystem { get; }
 
         public IActorRef Blockchain { get; }
@@ -27,15 +29,10 @@ namespace Neo
 
         public NeoSystem(Store store)
         {
-            var builder = new Autofac.ContainerBuilder();
-            builder.Register(x => this);
-            builder.Register(x => store);
-            builder.RegisterType<Blockchain>().AsSelf();
-            builder.RegisterType<LocalNode>().AsSelf();
-            builder.RegisterType<TaskManager>().AsSelf();
+            _neoContainer = new NeoContainer();
+            _neoContainer.Builder.Register(x => this);
+            _neoContainer.Builder.Register(x => store);
             
-            var container = builder.Build();
-
             ActorSystem = ActorSystem.Create(nameof(NeoSystem),
                 $"akka {{ log-dead-letters = off }}" +
                 $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
@@ -43,9 +40,9 @@ namespace Neo
                 $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
                 $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
                 $"consensus-service-mailbox {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}");
-            ActorSystem.UseAutofac(container);
+            ActorSystem.UseAutofac(_neoContainer.Container);
 
-            var propsResolver = new AutoFacDependencyResolver(container, ActorSystem);
+            var propsResolver = new AutoFacDependencyResolver(_neoContainer.Container, ActorSystem);
 
             this.Blockchain = ActorSystem.ActorOf(Ledger.Blockchain.Props(this, store));
             this.LocalNode = ActorSystem.ActorOf(Network.P2P.LocalNode.Props(this));
@@ -63,7 +60,7 @@ namespace Neo
 
         public void StartConsensus(Wallet wallet)
         {
-            Consensus = ActorSystem.ActorOf(ConsensusService.Props(this, wallet));
+            Consensus = ActorSystem.ActorOf(ConsensusService.Props(wallet, _neoContainer));
             Consensus.Tell(new ConsensusService.Start());
         }
 

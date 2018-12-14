@@ -12,7 +12,7 @@ using Neo.Wallets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Akka.DI.Core;
+using Autofac;
 
 namespace Neo.Consensus
 {
@@ -29,7 +29,8 @@ namespace Neo.Consensus
         public ConsensusService(NeoSystem system, Wallet wallet)
         {
             this.system = system;
-            this.context = new ConsensusContext(wallet);
+            context = new ConsensusContext();
+            context.Wallet = wallet;
         }
 
         private bool AddTransaction(Transaction tx, bool verify)
@@ -324,10 +325,18 @@ namespace Neo.Consensus
             base.PostStop();
         }
 
-        public static Props Props(NeoSystem system, Wallet wallet)
+        private static ConsensusService CreateConsensusService(Wallet wallet, NeoContainer neoContainer)
         {
+            var consensusService = neoContainer.Container.Resolve<ConsensusService>();
+            consensusService.context.Wallet = wallet;
+            return consensusService;
+        }
+
+        public static Props Props(Wallet wallet, NeoContainer neoContainer)
+        {
+            return Akka.Actor.Props.Create(() => CreateConsensusService(wallet, neoContainer)).WithMailbox("consensus-service-mailbox");
+//            return Akka.Actor.Props.Create(() => new ConsensusService(system, wallet)).WithMailbox("consensus-service-mailbox");
 //            return system.ActorSystem.DI().Props<ConsensusService>().WithMailbox("consensus-service-mailbox");
-            return Akka.Actor.Props.Create(() => new ConsensusService(system, wallet)).WithMailbox("consensus-service-mailbox");
         }
 
         private void RequestChangeView()
