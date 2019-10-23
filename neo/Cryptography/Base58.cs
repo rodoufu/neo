@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -29,6 +29,7 @@ namespace Neo.Cryptography
             }
             byte[] tmp = new byte[bytes.Length - (stripSignByte ? 1 : 0) + leadingZeros];
             Array.Copy(bytes, stripSignByte ? 1 : 0, tmp, leadingZeros, tmp.Length - leadingZeros);
+            Array.Clear(bytes, 0, bytes.Length);
             return tmp;
         }
 

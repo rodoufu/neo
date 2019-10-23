@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 
@@ -9,6 +9,7 @@ namespace Neo
     /// </summary>
     public class UInt160 : UIntBase, IComparable<UInt160>, IEquatable<UInt160>
     {
+        public const int Length = 20;
         public static readonly UInt160 Zero = new UInt160();
 
         /// <summary>
@@ -23,7 +24,7 @@ namespace Neo
         /// The byte[] constructor invokes base class UIntBase constructor for 20 bytes
         /// </summary>
         public UInt160(byte[] value)
-            : base(20, value)
+            : base(Length, value)
         {
         }
 
@@ -31,16 +32,20 @@ namespace Neo
         /// Method CompareTo returns 1 if this UInt160 is bigger than other UInt160; -1 if it's smaller; 0 if it's equals
         /// Example: assume this is 01ff00ff00ff00ff00ff00ff00ff00ff00ff00a4, this.CompareTo(02ff00ff00ff00ff00ff00ff00ff00ff00ff00a3) returns 1
         /// </summary>
-        public int CompareTo(UInt160 other)
+        public unsafe int CompareTo(UInt160 other)
         {
-            byte[] x = ToArray();
-            byte[] y = other.ToArray();
-            for (int i = x.Length - 1; i >= 0; i--)
+            fixed (byte* px = ToArray(), py = other.ToArray())
             {
-                if (x[i] > y[i])
-                    return 1;
-                if (x[i] < y[i])
-                    return -1;
+                uint* lpx = (uint*)px;
+                uint* lpy = (uint*)py;
+                //160 bit / 32 bit step   -1
+                for (int i = (160 / 32 - 1); i >= 0; i--)
+                {
+                    if (lpx[i] > lpy[i])
+                        return 1;
+                    if (lpx[i] < lpy[i])
+                        return -1;
+                }
             }
             return 0;
         }
@@ -48,9 +53,21 @@ namespace Neo
         /// <summary>
         /// Method Equals returns true if objects are equal, false otherwise
         /// </summary>
-        bool IEquatable<UInt160>.Equals(UInt160 other)
+        public unsafe bool Equals(UInt160 other)
         {
-            return Equals(other);
+            if (other is null) return false;
+            fixed (byte* px = ToArray(), py = other.ToArray())
+            {
+                uint* lpx = (uint*)px;
+                uint* lpy = (uint*)py;
+                //160 bit / 32 bit(uint step)   -1
+                for (int i = (160 / 32 - 1); i >= 0; i--)
+                {
+                    if (lpx[i] != lpy[i])
+                        return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -61,9 +78,9 @@ namespace Neo
         {
             if (value == null)
                 throw new ArgumentNullException();
-            if (value.StartsWith("0x"))
+            if (value.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase))
                 value = value.Substring(2);
-            if (value.Length != 40)
+            if (value.Length != Length * 2)
                 throw new FormatException();
             return new UInt160(value.HexToBytes().Reverse().ToArray());
         }
@@ -79,15 +96,15 @@ namespace Neo
                 result = null;
                 return false;
             }
-            if (s.StartsWith("0x"))
+            if (s.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase))
                 s = s.Substring(2);
-            if (s.Length != 40)
+            if (s.Length != Length * 2)
             {
                 result = null;
                 return false;
             }
-            byte[] data = new byte[20];
-            for (int i = 0; i < 20; i++)
+            byte[] data = new byte[Length];
+            for (int i = 0; i < Length; i++)
                 if (!byte.TryParse(s.Substring(i * 2, 2), NumberStyles.AllowHexSpecifier, null, out data[i]))
                 {
                     result = null;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Numerics;
 
 namespace Neo
@@ -41,18 +41,6 @@ namespace Neo
             if (!TryParse(s, decimals, out BigDecimal result))
                 throw new FormatException();
             return result;
-        }
-
-        public Fixed8 ToFixed8()
-        {
-            try
-            {
-                return new Fixed8((long)ChangeDecimals(8).value);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidCastException(ex.Message, ex);
-            }
         }
 
         public override string ToString()

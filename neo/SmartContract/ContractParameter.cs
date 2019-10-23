@@ -1,4 +1,4 @@
-﻿using Neo.Cryptography.ECC;
+using Neo.Cryptography.ECC;
 using Neo.IO.Json;
 using System;
 using System.Collections.Generic;
@@ -59,7 +59,7 @@ namespace Neo.SmartContract
         {
             ContractParameter parameter = new ContractParameter
             {
-                Type = json["type"].AsEnum<ContractParameterType>()
+                Type = json["type"].TryGetEnum<ContractParameterType>()
             };
             if (json["value"] != null)
                 switch (parameter.Type)

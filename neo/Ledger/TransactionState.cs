@@ -1,52 +1,50 @@
-﻿using Neo.IO;
-using Neo.IO.Json;
+using Neo.IO;
 using Neo.Network.P2P.Payloads;
+using Neo.VM;
 using System.IO;
 
 namespace Neo.Ledger
 {
-    public class TransactionState : StateBase, ICloneable<TransactionState>
+    public class TransactionState : ICloneable<TransactionState>, ISerializable
     {
         public uint BlockIndex;
+        public VMState VMState;
         public Transaction Transaction;
 
-        public override int Size => base.Size + sizeof(uint) + Transaction.Size;
+        int ISerializable.Size =>
+            sizeof(uint) +      // BlockIndex
+            sizeof(VMState) +   // VMState
+            Transaction.Size;   // Transaction
 
         TransactionState ICloneable<TransactionState>.Clone()
         {
             return new TransactionState
             {
                 BlockIndex = BlockIndex,
+                VMState = VMState,
                 Transaction = Transaction
             };
         }
 
-        public override void Deserialize(BinaryReader reader)
+        void ISerializable.Deserialize(BinaryReader reader)
         {
-            base.Deserialize(reader);
             BlockIndex = reader.ReadUInt32();
-            Transaction = Transaction.DeserializeFrom(reader);
+            VMState = (VMState)reader.ReadByte();
+            Transaction = reader.ReadSerializable<Transaction>();
         }
 
         void ICloneable<TransactionState>.FromReplica(TransactionState replica)
         {
             BlockIndex = replica.BlockIndex;
+            VMState = replica.VMState;
             Transaction = replica.Transaction;
         }
 
-        public override void Serialize(BinaryWriter writer)
+        void ISerializable.Serialize(BinaryWriter writer)
         {
-            base.Serialize(writer);
             writer.Write(BlockIndex);
+            writer.Write((byte)VMState);
             writer.Write(Transaction);
-        }
-
-        public override JObject ToJson()
-        {
-            JObject json = base.ToJson();
-            json["height"] = BlockIndex;
-            json["tx"] = Transaction.ToJson();
-            return json;
         }
     }
 }

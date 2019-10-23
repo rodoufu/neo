@@ -1,6 +1,9 @@
-﻿using Neo.Ledger;
+using Neo.IO.Json;
+using Neo.Ledger;
+using Neo.Wallets;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace Neo.Network.P2P.Payloads
 {
@@ -46,11 +49,19 @@ namespace Neo.Network.P2P.Payloads
                 MerkleRoot = MerkleRoot,
                 Timestamp = Timestamp,
                 Index = Index,
-                ConsensusData = ConsensusData,
                 NextConsensus = NextConsensus,
                 Witness = Witness,
                 Hashes = new UInt256[0]
             };
         }
+
+        public new static Header FromJson(JObject json)
+        {
+            Header header = new Header();
+            BlockBase blockBase = header;
+            blockBase.FromJson(json);
+            return header;
+        }
+
     }
 }

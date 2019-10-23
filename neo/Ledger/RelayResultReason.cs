@@ -1,4 +1,4 @@
-﻿namespace Neo.Ledger
+namespace Neo.Ledger
 {
     public enum RelayResultReason : byte
     {
@@ -7,6 +7,7 @@
         OutOfMemory,
         UnableToVerify,
         Invalid,
+        PolicyFail,
         Unknown
     }
 }

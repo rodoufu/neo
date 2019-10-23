@@ -1,4 +1,4 @@
-﻿namespace Neo.SmartContract
+namespace Neo.SmartContract
 {
     public enum ContractParameterType : byte
     {
@@ -16,6 +16,7 @@
 
         InteropInterface = 0xf0,
 
+        Any = 0xfe,
         Void = 0xff
     }
 }

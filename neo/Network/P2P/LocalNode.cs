@@ -1,4 +1,4 @@
-﻿using Akka.Actor;
+using Akka.Actor;
 using Neo.IO;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
@@ -21,9 +21,8 @@ namespace Neo.Network.P2P
         internal class SendDirectly { public IInventory Inventory; }
 
         public const uint ProtocolVersion = 0;
-        protected override int ConnectedMax => 10;
-        protected override int UnconnectedMax => 1000;
 
+        private static readonly object lockObj = new object();
         private readonly NeoSystem system;
         internal readonly ConcurrentDictionary<IActorRef, RemoteNode> RemoteNodes = new ConcurrentDictionary<IActorRef, RemoteNode>();
 
@@ -32,7 +31,7 @@ namespace Neo.Network.P2P
         public static readonly uint Nonce;
         public static string UserAgent { get; set; }
 
-        private static LocalNode singleton { get; set; }
+        private static LocalNode singleton;
         public static LocalNode Singleton
         {
             get
@@ -51,7 +50,7 @@ namespace Neo.Network.P2P
 
         public LocalNode(NeoSystem system)
         {
-            lock (GetType())
+            lock (lockObj)
             {
                 if (singleton != null)
                     throw new InvalidOperationException();
@@ -60,7 +59,7 @@ namespace Neo.Network.P2P
             }
         }
 
-        private void BroadcastMessage(string command, ISerializable payload = null)
+        private void BroadcastMessage(MessageCommand command, ISerializable payload = null)
         {
             BroadcastMessage(Message.Create(command, payload));
         }
@@ -93,7 +92,7 @@ namespace Neo.Network.P2P
             if (seedsToTake > 0)
             {
                 Random rand = new Random();
-                foreach (string hostAndPort in Settings.Default.SeedList.OrderBy(p => rand.Next()))
+                foreach (string hostAndPort in ProtocolSettings.Default.SeedList.OrderBy(p => rand.Next()))
                 {
                     if (seedsToTake == 0) break;
                     string[] p = hostAndPort.Split(':');
@@ -128,7 +127,7 @@ namespace Neo.Network.P2P
             count = Math.Max(count, 5);
             if (ConnectedPeers.Count > 0)
             {
-                BroadcastMessage("getaddr");
+                BroadcastMessage(MessageCommand.GetAddr);
             }
             else
             {

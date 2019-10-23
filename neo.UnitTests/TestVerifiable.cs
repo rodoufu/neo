@@ -7,9 +7,13 @@ namespace Neo.UnitTests
 {
     public class TestVerifiable : IVerifiable
     {
-        private string testStr = "testStr";
+        private readonly string testStr = "testStr";
 
-        public Witness[] Witnesses { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public Witness[] Witnesses
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
 
         public int Size => throw new NotImplementedException();
 
@@ -19,11 +23,6 @@ namespace Neo.UnitTests
         }
 
         public void DeserializeUnsigned(BinaryReader reader)
-        {
-            throw new NotImplementedException();
-        }
-
-        public byte[] GetMessage()
         {
             throw new NotImplementedException();
         }
@@ -40,7 +39,7 @@ namespace Neo.UnitTests
 
         public void SerializeUnsigned(BinaryWriter writer)
         {
-            writer.Write((string) testStr);
+            writer.Write((string)testStr);
         }
     }
 }

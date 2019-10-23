@@ -1,11 +1,11 @@
-﻿using Neo.IO;
+using Neo.IO;
 using Neo.IO.Caching;
 using System;
 using System.IO;
 
 namespace Neo.Consensus
 {
-    internal abstract class ConsensusMessage : ISerializable
+    public abstract class ConsensusMessage : ISerializable
     {
         /// <summary>
         /// Reflection cache for ConsensusMessageType
@@ -15,7 +15,7 @@ namespace Neo.Consensus
         public readonly ConsensusMessageType Type;
         public byte ViewNumber;
 
-        public int Size => sizeof(ConsensusMessageType) + sizeof(byte);
+        public virtual int Size => sizeof(ConsensusMessageType) + sizeof(byte);
 
         protected ConsensusMessage(ConsensusMessageType type)
         {

@@ -1,6 +1,5 @@
-﻿using Neo.IO;
+using Neo.IO;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -47,13 +46,6 @@ namespace Neo.Cryptography.ECC
             int expectedLength = (curve.Q.GetBitLength() + 7) / 8;
             switch (encoded[0])
             {
-                case 0x00: // infinity
-                    {
-                        if (encoded.Length != 1)
-                            throw new FormatException("Incorrect length for infinity encoding");
-                        p = curve.Infinity;
-                        break;
-                    }
                 case 0x02: // compressed
                 case 0x03: // compressed
                     {
@@ -65,8 +57,6 @@ namespace Neo.Cryptography.ECC
                         break;
                     }
                 case 0x04: // uncompressed
-                case 0x06: // hybrid
-                case 0x07: // hybrid
                     {
                         if (encoded.Length != (2 * expectedLength + 1))
                             throw new FormatException("Incorrect length for uncompressed/hybrid encoding");
@@ -120,17 +110,23 @@ namespace Neo.Cryptography.ECC
             buffer[0] = reader.ReadByte();
             switch (buffer[0])
             {
-                case 0x00:
-                    return curve.Infinity;
                 case 0x02:
                 case 0x03:
-                    reader.Read(buffer, 1, expectedLength);
-                    return DecodePoint(buffer.Take(1 + expectedLength).ToArray(), curve);
+                    {
+                        if (reader.Read(buffer, 1, expectedLength) != expectedLength)
+                        {
+                            throw new FormatException();
+                        }
+                        return DecodePoint(buffer.Take(1 + expectedLength).ToArray(), curve);
+                    }
                 case 0x04:
-                case 0x06:
-                case 0x07:
-                    reader.Read(buffer, 1, expectedLength * 2);
-                    return DecodePoint(buffer, curve);
+                    {
+                        if (reader.Read(buffer, 1, expectedLength * 2) != expectedLength * 2)
+                        {
+                            throw new FormatException();
+                        }
+                        return DecodePoint(buffer, curve);
+                    }
                 default:
                     throw new FormatException("Invalid point encoding " + buffer[0]);
             }
@@ -399,7 +395,6 @@ namespace Neo.Cryptography.ECC
             {
                 if (x.Y.Equals(y.Y))
                     return x.Twice();
-                Debug.Assert(x.Y.Equals(-y.Y));
                 return x.Curve.Infinity;
             }
             ECFieldElement gamma = (y.Y - x.Y) / (y.X - x.X);

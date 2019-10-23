@@ -1,4 +1,3 @@
-﻿using Neo.Cryptography.ECC;
 using Neo.IO.Caching;
 using Neo.IO.Data.LevelDB;
 using Neo.IO.Wrappers;
@@ -35,19 +34,16 @@ namespace Neo.Persistence.LevelDB
             db.Dispose();
         }
 
-        public override DataCache<UInt160, AccountState> GetAccounts()
+        public override byte[] Get(byte[] key)
         {
-            return new DbCache<UInt160, AccountState>(db, null, null, Prefixes.ST_Account);
+            if (!db.TryGet(ReadOptions.Default, key, out Slice slice))
+                return null;
+            return slice.ToArray();
         }
 
-        public override DataCache<UInt256, AssetState> GetAssets()
+        public override DataCache<UInt256, TrimmedBlock> GetBlocks()
         {
-            return new DbCache<UInt256, AssetState>(db, null, null, Prefixes.ST_Asset);
-        }
-
-        public override DataCache<UInt256, BlockState> GetBlocks()
-        {
-            return new DbCache<UInt256, BlockState>(db, null, null, Prefixes.DATA_Block);
+            return new DbCache<UInt256, TrimmedBlock>(db, null, null, Prefixes.DATA_Block);
         }
 
         public override DataCache<UInt160, ContractState> GetContracts()
@@ -60,11 +56,6 @@ namespace Neo.Persistence.LevelDB
             return new DbSnapshot(db);
         }
 
-        public override DataCache<UInt256, SpentCoinState> GetSpentCoins()
-        {
-            return new DbCache<UInt256, SpentCoinState>(db, null, null, Prefixes.ST_SpentCoin);
-        }
-
         public override DataCache<StorageKey, StorageItem> GetStorages()
         {
             return new DbCache<StorageKey, StorageItem>(db, null, null, Prefixes.ST_Storage);
@@ -75,24 +66,9 @@ namespace Neo.Persistence.LevelDB
             return new DbCache<UInt256, TransactionState>(db, null, null, Prefixes.DATA_Transaction);
         }
 
-        public override DataCache<UInt256, UnspentCoinState> GetUnspentCoins()
-        {
-            return new DbCache<UInt256, UnspentCoinState>(db, null, null, Prefixes.ST_Coin);
-        }
-
-        public override DataCache<ECPoint, ValidatorState> GetValidators()
-        {
-            return new DbCache<ECPoint, ValidatorState>(db, null, null, Prefixes.ST_Validator);
-        }
-
         public override DataCache<UInt32Wrapper, HeaderHashList> GetHeaderHashList()
         {
             return new DbCache<UInt32Wrapper, HeaderHashList>(db, null, null, Prefixes.IX_HeaderHashList);
-        }
-
-        public override MetaDataCache<ValidatorsCountState> GetValidatorsCount()
-        {
-            return new DbMetaDataCache<ValidatorsCountState>(db, null, null, Prefixes.IX_ValidatorsCount);
         }
 
         public override MetaDataCache<HashIndexState> GetBlockHashIndex()
@@ -103,6 +79,16 @@ namespace Neo.Persistence.LevelDB
         public override MetaDataCache<HashIndexState> GetHeaderHashIndex()
         {
             return new DbMetaDataCache<HashIndexState>(db, null, null, Prefixes.IX_CurrentHeader);
+        }
+
+        public override void Put(byte[] key, byte[] value)
+        {
+            db.Put(WriteOptions.Default, key, value);
+        }
+
+        public override void PutSync(byte[] key, byte[] value)
+        {
+            db.Put(new WriteOptions { Sync = true }, key, value);
         }
     }
 }

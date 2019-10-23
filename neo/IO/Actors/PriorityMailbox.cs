@@ -1,4 +1,4 @@
-﻿using Akka.Actor;
+using Akka.Actor;
 using Akka.Configuration;
 using Akka.Dispatch;
 using Akka.Dispatch.MessageQueues;
@@ -18,7 +18,7 @@ namespace Neo.IO.Actors
             return new PriorityMessageQueue(ShallDrop, IsHighPriority);
         }
 
-        protected virtual bool IsHighPriority(object message) => false;
-        protected virtual bool ShallDrop(object message, IEnumerable queue) => false;
+        internal protected virtual bool IsHighPriority(object message) => false;
+        internal protected virtual bool ShallDrop(object message, IEnumerable queue) => false;
     }
 }
