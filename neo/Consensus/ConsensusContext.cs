@@ -1,4 +1,3 @@
-using Neo.Cryptography;
 using Neo.Cryptography.ECC;
 using Neo.IO;
 using Neo.Ledger;
@@ -23,6 +22,7 @@ namespace Neo.Consensus
         /// </summary>
         private static readonly byte[] ConsensusStateKey = { 0xf4 };
 
+        public Blockchain blockchain;
         public Block Block;
         public byte ViewNumber;
         public ECPoint[] Validators;
@@ -66,6 +66,11 @@ namespace Neo.Consensus
         // potentially splitting nodes among views and stalling the network.
         public bool MoreThanFNodesCommittedOrLost => (CountCommitted + CountFailed) > F;
         #endregion
+
+        public ConsensusContext(Blockchain blockchain)
+        {
+            this.blockchain = blockchain;
+        }
 
         public Wallet Wallet
         {
@@ -283,7 +288,7 @@ namespace Neo.Consensus
             byte[] buffer = new byte[sizeof(ulong)];
             random.NextBytes(buffer);
             Block.ConsensusData.Nonce = BitConverter.ToUInt64(buffer, 0);
-            EnsureMaxBlockSize(Blockchain.Singleton.MemPool.GetSortedVerifiedTransactions());
+            EnsureMaxBlockSize(blockchain.MemPool.GetSortedVerifiedTransactions());
             Block.Timestamp = Math.Max(TimeProvider.Current.UtcNow.ToTimestampMS(), PrevHeader.Timestamp + 1);
 
             return PreparationPayloads[MyIndex] = MakeSignedPayload(new PrepareRequest
@@ -341,7 +346,7 @@ namespace Neo.Consensus
             if (viewNumber == 0)
             {
                 Snapshot?.Dispose();
-                Snapshot = Blockchain.Singleton.GetSnapshot();
+                Snapshot = blockchain.GetSnapshot();
                 Block = new Block
                 {
                     PrevHash = Snapshot.CurrentBlockHash,

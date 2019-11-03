@@ -61,6 +61,12 @@ namespace Neo.SmartContract
 
         public readonly IVerifiable Verifiable;
         private readonly Dictionary<UInt160, ContextItem> ContextItems;
+        private readonly Blockchain blockchain;
+
+        public ContractParametersContext(Blockchain blockchain)
+        {
+            this.blockchain = blockchain;
+        }
 
         public bool Completed
         {
@@ -94,7 +100,7 @@ namespace Neo.SmartContract
                         return _ScriptHashes;
                     }
 
-                    using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+                    using (Snapshot snapshot = blockchain.GetSnapshot())
                     {
                         _ScriptHashes = Verifiable.GetScriptHashesForVerifying(snapshot);
                     }
@@ -190,7 +196,7 @@ namespace Neo.SmartContract
 
                 if (index == -1)
                 {
-                    // unable to find ContractParameterType.Signature in contract.ParameterList 
+                    // unable to find ContractParameterType.Signature in contract.ParameterList
                     // return now to prevent array index out of bounds exception
                     return false;
                 }

@@ -26,7 +26,9 @@ namespace Neo.Consensus
 
         private readonly ConsensusContext context;
         private readonly IActorRef localNode;
+        private readonly LocalNode theLocalNode;
         private readonly IActorRef taskManager;
+        private readonly Blockchain blockchain;
         private ICancelable timer_token;
         private DateTime block_received_time;
         private bool started = false;
@@ -48,9 +50,11 @@ namespace Neo.Consensus
         private bool isRecovering = false;
 
         // FIXME @rodoufu Use IoC here
-        public ConsensusService(IActorRef localNode, IActorRef taskManager, Store store, Wallet wallet)
+        public ConsensusService(LocalNodeActor localNode, TaskManagerActor taskManager, Store store, Wallet wallet, LocalNode theLocalNode, Blockchain blockchain)
             : this(localNode, taskManager, new ConsensusContext(wallet, store))
         {
+            this.theLocalNode = theLocalNode;
+            this.blockchain = blockchain;
         }
 
         internal ConsensusService(IActorRef localNode, IActorRef taskManager, ConsensusContext context)
@@ -261,7 +265,7 @@ namespace Neo.Consensus
             {
                 if (context.Block.Index < payload.BlockIndex)
                 {
-                    Log($"chain sync: expected={payload.BlockIndex} current={context.Block.Index - 1} nodes={LocalNode.Singleton.ConnectedCount}", LogLevel.Warning);
+                    Log($"chain sync: expected={payload.BlockIndex} current={context.Block.Index - 1} nodes={theLocalNode.ConnectedCount}", LogLevel.Warning);
                 }
                 return;
             }
@@ -443,7 +447,7 @@ namespace Neo.Consensus
                 return;
             }
 
-            Dictionary<UInt256, Transaction> mempoolVerified = Blockchain.Singleton.MemPool.GetVerifiedTransactions().ToDictionary(p => p.Hash);
+            Dictionary<UInt256, Transaction> mempoolVerified = blockchain.MemPool.GetVerifiedTransactions().ToDictionary(p => p.Hash);
             List<Transaction> unverified = new List<Transaction>();
             foreach (UInt256 hash in context.TransactionHashes)
             {
@@ -454,7 +458,7 @@ namespace Neo.Consensus
                 }
                 else
                 {
-                    if (Blockchain.Singleton.MemPool.TryGetValue(hash, out tx))
+                    if (blockchain.MemPool.TryGetValue(hash, out tx))
                         unverified.Add(tx);
                 }
             }
@@ -522,7 +526,7 @@ namespace Neo.Consensus
 
         private void RequestRecovery()
         {
-            if (context.Block.Index == Blockchain.Singleton.HeaderHeight + 1)
+            if (context.Block.Index == blockchain.HeaderHeight + 1)
                 localNode.Tell(new LocalNode.SendDirectly { Inventory = context.MakeRecoveryRequest() });
         }
 
@@ -606,13 +610,6 @@ namespace Neo.Consensus
             var consensusService = neoContainer.Container.Resolve<ConsensusService>();
             consensusService.context.Wallet = wallet;
             return consensusService;
-        }
-
-        public static Props Props(IActorRef localNode, IActorRef taskManager, Store store, Wallet wallet)
-        {
-            return Akka.Actor.Props.Create(() => new ConsensusService(localNode, taskManager, store, wallet)).WithMailbox("consensus-service-mailbox");
-//            return Akka.Actor.Props.Create(() => new ConsensusService(system, wallet)).WithMailbox("consensus-service-mailbox");
-//            return system.ActorSystem.DI().Props<ConsensusService>().WithMailbox("consensus-service-mailbox");
         }
 
         private void RequestChangeView(ChangeViewReason reason)

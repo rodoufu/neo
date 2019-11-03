@@ -69,16 +69,21 @@ namespace Neo.Network.RPC
         }
 
         public Wallet Wallet { get; set; }
-        public long MaxGasInvoke { get; }
+        public long MaxGasInvoke { get; internal set; }
 
         private IWebHost host;
-        private readonly NeoSystem system;
+        private readonly Blockchain blockchain;
+        private readonly BlockchainActor blockchainActor;
+        private readonly LocalNode localNode;
 
-        public RpcServer(NeoSystem system, Wallet wallet = null, long maxGasInvoke = default)
+        public RpcServer(Blockchain blockchain, BlockchainActor blockchainActor, LocalNode localNode,
+            Wallet wallet = null, long maxGasInvoke = default)
         {
-            this.system = system;
-            this.Wallet = wallet;
-            this.MaxGasInvoke = maxGasInvoke;
+            Wallet = wallet;
+            MaxGasInvoke = maxGasInvoke;
+            this.blockchain = blockchain;
+            this.localNode = localNode;
+            this.blockchainActor = blockchainActor;
         }
 
         private static JObject CreateErrorResponse(JObject id, int code, string message, JObject data = null)
@@ -426,7 +431,7 @@ namespace Neo.Network.RPC
 
         private JObject GetBestBlockHash()
         {
-            return Blockchain.Singleton.CurrentBlockHash.ToString();
+            return blockchain.CurrentBlockHash.ToString();
         }
 
         private JObject GetBlock(JObject key, bool verbose)
@@ -435,20 +440,20 @@ namespace Neo.Network.RPC
             if (key is JNumber)
             {
                 uint index = uint.Parse(key.AsString());
-                block = Blockchain.Singleton.Store.GetBlock(index);
+                block = blockchain.Store.GetBlock(blockchain, index);
             }
             else
             {
                 UInt256 hash = UInt256.Parse(key.AsString());
-                block = Blockchain.Singleton.Store.GetBlock(hash);
+                block = blockchain.Store.GetBlock(hash);
             }
             if (block == null)
                 throw new RpcException(-100, "Unknown block");
             if (verbose)
             {
                 JObject json = block.ToJson();
-                json["confirmations"] = Blockchain.Singleton.Height - block.Index + 1;
-                UInt256 hash = Blockchain.Singleton.Store.GetNextBlockHash(block.Hash);
+                json["confirmations"] = blockchain.Height - block.Index + 1;
+                UInt256 hash = blockchain.Store.GetNextBlockHash(blockchain, block.Hash);
                 if (hash != null)
                     json["nextblockhash"] = hash.ToString();
                 return json;
@@ -458,14 +463,14 @@ namespace Neo.Network.RPC
 
         private JObject GetBlockCount()
         {
-            return Blockchain.Singleton.Height + 1;
+            return blockchain.Height + 1;
         }
 
         private JObject GetBlockHash(uint height)
         {
-            if (height <= Blockchain.Singleton.Height)
+            if (height <= blockchain.Height)
             {
-                return Blockchain.Singleton.GetBlockHash(height).ToString();
+                return blockchain.GetBlockHash(height).ToString();
             }
             throw new RpcException(-100, "Invalid Height");
         }
@@ -476,12 +481,12 @@ namespace Neo.Network.RPC
             if (key is JNumber)
             {
                 uint height = uint.Parse(key.AsString());
-                header = Blockchain.Singleton.Store.GetHeader(height);
+                header = blockchain.Store.GetHeader(blockchain, height);
             }
             else
             {
                 UInt256 hash = UInt256.Parse(key.AsString());
-                header = Blockchain.Singleton.Store.GetHeader(hash);
+                header = blockchain.Store.GetHeader(hash);
             }
             if (header == null)
                 throw new RpcException(-100, "Unknown block");
@@ -489,8 +494,8 @@ namespace Neo.Network.RPC
             if (verbose)
             {
                 JObject json = header.ToJson();
-                json["confirmations"] = Blockchain.Singleton.Height - header.Index + 1;
-                UInt256 hash = Blockchain.Singleton.Store.GetNextBlockHash(header.Hash);
+                json["confirmations"] = blockchain.Height - header.Index + 1;
+                UInt256 hash = blockchain.Store.GetNextBlockHash(blockchain, header.Hash);
                 if (hash != null)
                     json["nextblockhash"] = hash.ToString();
                 return json;
@@ -501,7 +506,7 @@ namespace Neo.Network.RPC
 
         private JObject GetBlockSysFee(uint height)
         {
-            if (height <= Blockchain.Singleton.Height)
+            if (height <= blockchain.Height)
                 using (ApplicationEngine engine = NativeContract.GAS.TestCall("getSysFeeAmount", height))
                 {
                     return engine.ResultStack.Peek().GetBigInteger().ToString();
@@ -511,19 +516,19 @@ namespace Neo.Network.RPC
 
         private JObject GetConnectionCount()
         {
-            return LocalNode.Singleton.ConnectedCount;
+            return localNode.ConnectedCount;
         }
 
         private JObject GetContractState(UInt160 script_hash)
         {
-            ContractState contract = Blockchain.Singleton.Store.GetContracts().TryGet(script_hash);
+            ContractState contract = blockchain.Store.GetContracts().TryGet(script_hash);
             return contract?.ToJson() ?? throw new RpcException(-100, "Unknown contract");
         }
 
         private JObject GetPeers()
         {
             JObject json = new JObject();
-            json["unconnected"] = new JArray(LocalNode.Singleton.GetUnconnectedPeers().Select(p =>
+            json["unconnected"] = new JArray(localNode.GetUnconnectedPeers().Select(p =>
             {
                 JObject peerJson = new JObject();
                 peerJson["address"] = p.Address.ToString();
@@ -531,7 +536,7 @@ namespace Neo.Network.RPC
                 return peerJson;
             }));
             json["bad"] = new JArray(); //badpeers has been removed
-            json["connected"] = new JArray(LocalNode.Singleton.GetRemoteNodes().Select(p =>
+            json["connected"] = new JArray(localNode.GetRemoteNodes().Select(p =>
             {
                 JObject peerJson = new JObject();
                 peerJson["address"] = p.Remote.Address.ToString();
@@ -544,11 +549,11 @@ namespace Neo.Network.RPC
         private JObject GetRawMemPool(bool shouldGetUnverified)
         {
             if (!shouldGetUnverified)
-                return new JArray(Blockchain.Singleton.MemPool.GetVerifiedTransactions().Select(p => (JObject)p.Hash.ToString()));
+                return new JArray(blockchain.MemPool.GetVerifiedTransactions().Select(p => (JObject)p.Hash.ToString()));
 
             JObject json = new JObject();
-            json["height"] = Blockchain.Singleton.Height;
-            Blockchain.Singleton.MemPool.GetVerifiedAndUnverifiedTransactions(
+            json["height"] = blockchain.Height;
+            blockchain.MemPool.GetVerifiedAndUnverifiedTransactions(
                 out IEnumerable<Transaction> verifiedTransactions,
                 out IEnumerable<Transaction> unverifiedTransactions);
             json["verified"] = new JArray(verifiedTransactions.Select(p => (JObject)p.Hash.ToString()));
@@ -558,18 +563,18 @@ namespace Neo.Network.RPC
 
         private JObject GetRawTransaction(UInt256 hash, bool verbose)
         {
-            Transaction tx = Blockchain.Singleton.GetTransaction(hash);
+            Transaction tx = blockchain.GetTransaction(hash);
             if (tx == null)
                 throw new RpcException(-100, "Unknown transaction");
             if (verbose)
             {
                 JObject json = tx.ToJson();
-                TransactionState txState = Blockchain.Singleton.Store.GetTransactions().TryGet(hash);
+                TransactionState txState = blockchain.Store.GetTransactions().TryGet(hash);
                 if (txState != null)
                 {
-                    Header header = Blockchain.Singleton.Store.GetHeader(txState.BlockIndex);
+                    Header header = blockchain.Store.GetHeader(blockchain, txState.BlockIndex);
                     json["blockhash"] = header.Hash.ToString();
-                    json["confirmations"] = Blockchain.Singleton.Height - header.Index + 1;
+                    json["confirmations"] = blockchain.Height - header.Index + 1;
                     json["blocktime"] = header.Timestamp;
                     json["vmState"] = txState.VMState;
                 }
@@ -580,7 +585,7 @@ namespace Neo.Network.RPC
 
         private JObject GetStorage(UInt160 script_hash, byte[] key)
         {
-            StorageItem item = Blockchain.Singleton.Store.GetStorages().TryGet(new StorageKey
+            StorageItem item = blockchain.Store.GetStorages().TryGet(new StorageKey
             {
                 ScriptHash = script_hash,
                 Key = key
@@ -590,14 +595,14 @@ namespace Neo.Network.RPC
 
         private JObject GetTransactionHeight(UInt256 hash)
         {
-            uint? height = Blockchain.Singleton.Store.GetTransactions().TryGet(hash)?.BlockIndex;
+            uint? height = blockchain.Store.GetTransactions().TryGet(hash)?.BlockIndex;
             if (height.HasValue) return height.Value;
             throw new RpcException(-100, "Unknown transaction");
         }
 
         private JObject GetValidators()
         {
-            using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+            using (Snapshot snapshot = blockchain.GetSnapshot())
             {
                 var validators = NativeContract.NEO.GetValidators(snapshot);
                 return NativeContract.NEO.GetRegisteredValidators(snapshot).Select(p =>
@@ -614,8 +619,8 @@ namespace Neo.Network.RPC
         private JObject GetVersion()
         {
             JObject json = new JObject();
-            json["tcpPort"] = LocalNode.Singleton.ListenerTcpPort;
-            json["wsPort"] = LocalNode.Singleton.ListenerWsPort;
+            json["tcpPort"] = localNode.ListenerTcpPort;
+            json["wsPort"] = localNode.ListenerWsPort;
             json["nonce"] = LocalNode.Nonce;
             json["useragent"] = LocalNode.UserAgent;
             return json;
@@ -653,13 +658,13 @@ namespace Neo.Network.RPC
 
         private JObject SendRawTransaction(Transaction tx)
         {
-            RelayResultReason reason = system.Blockchain.Ask<RelayResultReason>(tx).Result;
+            RelayResultReason reason = blockchainActor.Ask<RelayResultReason>(tx).Result;
             return GetRelayResult(reason, tx.Hash);
         }
 
         private JObject SubmitBlock(Block block)
         {
-            RelayResultReason reason = system.Blockchain.Ask<RelayResultReason>(block).Result;
+            RelayResultReason reason = blockchainActor.Ask<RelayResultReason>(block).Result;
             return GetRelayResult(reason, block.Hash);
         }
 

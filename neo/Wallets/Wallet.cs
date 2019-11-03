@@ -218,10 +218,10 @@ namespace Neo.Wallets
             else
             {
                 if (!Contains(from))
-                    throw new ArgumentException($"The address {from.ToString()} was not found in the wallet");
+                    throw new ArgumentException($"The address {from} was not found in the wallet");
                 accounts = new[] { from };
             }
-            using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+            using (Snapshot snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
             {
                 HashSet<UInt160> cosignerList = new HashSet<UInt160>();
                 byte[] script;
@@ -287,10 +287,10 @@ namespace Neo.Wallets
             else
             {
                 if (!Contains(sender))
-                    throw new ArgumentException($"The address {sender.ToString()} was not found in the wallet");
+                    throw new ArgumentException($"The address {sender} was not found in the wallet");
                 accounts = new[] { sender };
             }
-            using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+            using (Snapshot snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
             {
                 var balances_gas = accounts.Select(p => (Account: p, Value: NativeContract.GAS.BalanceOf(snapshot, p))).Where(p => p.Value.Sign > 0).ToList();
                 return MakeTransaction(snapshot, script, attributes ?? new TransactionAttribute[0], cosigners ?? new Cosigner[0], balances_gas);

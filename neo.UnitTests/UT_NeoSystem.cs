@@ -17,7 +17,7 @@ namespace Neo.UnitTests
         }
 
         [TestMethod]
-        public void Craeating()
+        public void Creating()
         {
             Assert.IsNotNull(neoSystem);
             Assert.IsNotNull(neoSystem.ActorSystem);

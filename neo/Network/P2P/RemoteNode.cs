@@ -17,10 +17,11 @@ namespace Neo.Network.P2P
     {
         internal class Relay { public IInventory Inventory; }
 
-        private readonly NeoSystem system;
+        private readonly LocalNode localNode;
         private readonly IActorRef protocol;
         private readonly Queue<Message> message_queue_high = new Queue<Message>();
         private readonly Queue<Message> message_queue_low = new Queue<Message>();
+        private readonly TaskManagerActor taskManagerActor;
         private ByteString msg_buffer = ByteString.Empty;
         private BloomFilter bloom_filter;
         private bool ack = true;
@@ -32,20 +33,22 @@ namespace Neo.Network.P2P
         public uint LastBlockIndex { get; private set; } = 0;
         public bool IsFullNode { get; private set; } = false;
 
-        public RemoteNode(NeoSystem system, object connection, IPEndPoint remote, IPEndPoint local)
+        public RemoteNode(ProtocolHandlerProps protocolHandlerProps, object connection, IPEndPoint remote, IPEndPoint local, LocalNode localNode,
+            Blockchain blockchain, TaskManagerActor taskManagerActor)
             : base(connection, remote, local)
         {
-            this.system = system;
-            this.protocol = Context.ActorOf(ProtocolHandler.Props(system));
-            LocalNode.Singleton.RemoteNodes.TryAdd(Self, this);
+            this.localNode = localNode;
+            this.protocol = Context.ActorOf(protocolHandlerProps);
+            localNode.RemoteNodes.TryAdd(Self, this);
+            this.taskManagerActor = taskManagerActor;
 
             var capabilities = new List<NodeCapability>
             {
-                new FullNodeCapability(Blockchain.Singleton.Height)
+                new FullNodeCapability(blockchain.Height)
             };
 
-            if (LocalNode.Singleton.ListenerTcpPort > 0) capabilities.Add(new ServerCapability(NodeCapabilityType.TcpServer, (ushort)LocalNode.Singleton.ListenerTcpPort));
-            if (LocalNode.Singleton.ListenerWsPort > 0) capabilities.Add(new ServerCapability(NodeCapabilityType.WsServer, (ushort)LocalNode.Singleton.ListenerWsPort));
+            if (localNode.ListenerTcpPort > 0) capabilities.Add(new ServerCapability(NodeCapabilityType.TcpServer, (ushort)localNode.ListenerTcpPort));
+            if (localNode.ListenerWsPort > 0) capabilities.Add(new ServerCapability(NodeCapabilityType.WsServer, (ushort)localNode.ListenerWsPort));
 
             SendMessage(Message.Create(MessageCommand.Version, VersionPayload.Create(LocalNode.Nonce, LocalNode.UserAgent, capabilities.ToArray())));
         }
@@ -182,7 +185,7 @@ namespace Neo.Network.P2P
         private void OnVerack()
         {
             verack = true;
-            system.TaskManager.Tell(new TaskManager.Register { Version = Version });
+            taskManagerActor.Tell(new TaskManager.Register { Version = Version });
             CheckMessageQueue();
         }
 
@@ -208,7 +211,7 @@ namespace Neo.Network.P2P
                 Disconnect(true);
                 return;
             }
-            if (LocalNode.Singleton.RemoteNodes.Values.Where(p => p != this).Any(p => p.Remote.Address.Equals(Remote.Address) && p.Version?.Nonce == version.Nonce))
+            if (localNode.RemoteNodes.Values.Where(p => p != this).Any(p => p.Remote.Address.Equals(Remote.Address) && p.Version?.Nonce == version.Nonce))
             {
                 Disconnect(true);
                 return;
@@ -218,13 +221,8 @@ namespace Neo.Network.P2P
 
         protected override void PostStop()
         {
-            LocalNode.Singleton.RemoteNodes.TryRemove(Self, out _);
+            localNode.RemoteNodes.TryRemove(Self, out _);
             base.PostStop();
-        }
-
-        internal static Props Props(NeoSystem system, object connection, IPEndPoint remote, IPEndPoint local)
-        {
-            return Akka.Actor.Props.Create(() => new RemoteNode(system, connection, remote, local)).WithMailbox("remote-node-mailbox");
         }
 
         private void SendMessage(Message message)

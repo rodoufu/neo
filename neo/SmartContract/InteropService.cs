@@ -357,7 +357,7 @@ namespace Neo.SmartContract
             byte[] data = engine.CurrentContext.EvaluationStack.Pop().GetByteArray();
             UInt256 hash;
             if (data.Length <= 5)
-                hash = Blockchain.Singleton.GetBlockHash((uint)new BigInteger(data));
+                hash = NeoContainer.Instance.Blockchain.GetBlockHash((uint)new BigInteger(data));
             else if (data.Length == 32)
                 hash = new UInt256(data);
             else
@@ -395,7 +395,7 @@ namespace Neo.SmartContract
             byte[] data = engine.CurrentContext.EvaluationStack.Pop().GetByteArray();
             UInt256 hash;
             if (data.Length <= 5)
-                hash = Blockchain.Singleton.GetBlockHash((uint)new BigInteger(data));
+                hash = NeoContainer.Instance.Blockchain.GetBlockHash((uint)new BigInteger(data));
             else if (data.Length == 32)
                 hash = new UInt256(data);
             else

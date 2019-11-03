@@ -26,7 +26,9 @@ namespace Neo.Ledger
         // These two are not expected to be hit, they are just safegaurds.
         private static readonly double MaxMillisecondsToReverifyTxPerIdle = (double)Blockchain.MillisecondsPerBlock / 15;
 
-        private readonly NeoSystem _system;
+        private readonly Blockchain blockchain;
+        private readonly BlockchainActor blockchainActor;
+        private readonly LocalNodeActor localNodeActor;
 
         //
         /// <summary>
@@ -67,7 +69,7 @@ namespace Neo.Ledger
         /// <summary>
         /// Total maximum capacity of transactions the pool can hold.
         /// </summary>
-        public int Capacity { get; }
+        public int Capacity { get; internal set; }
 
         /// <summary>
         /// Total count of transactions in the pool.
@@ -95,10 +97,13 @@ namespace Neo.Ledger
 
         public int UnVerifiedCount => _unverifiedTransactions.Count;
 
-        public MemoryPool(NeoSystem system, int capacity)
+        public MemoryPool(Blockchain blockchain, BlockchainActor blockchainActor,
+            LocalNodeActor localNodeActor, int capacity = 100)
         {
-            _system = system;
             Capacity = capacity;
+            this.blockchain = blockchain;
+            this.blockchainActor = blockchainActor;
+            this.localNodeActor = localNodeActor;
         }
 
         internal bool LoadPolicy(Snapshot snapshot)
@@ -369,7 +374,7 @@ namespace Neo.Ledger
                     _unverifiedSortedTransactions.Clear();
 
                     if (tx.Count > 0)
-                        _system.Blockchain.Tell(tx.ToArray(), ActorRefs.NoSender);
+                        blockchainActor.Tell(tx.ToArray(), ActorRefs.NoSender);
                 }
             }
             finally
@@ -379,7 +384,7 @@ namespace Neo.Ledger
 
             // If we know about headers of future blocks, no point in verifying transactions from the unverified tx pool
             // until we get caught up.
-            if (block.Index > 0 && block.Index < Blockchain.Singleton.HeaderHeight || policyChanged)
+            if (block.Index > 0 && block.Index < blockchain.HeaderHeight || policyChanged)
                 return;
 
             ReverifyTransactions(_sortedTransactions, _unverifiedSortedTransactions,
@@ -436,7 +441,7 @@ namespace Neo.Ledger
 
                         if (item.LastBroadcastTimestamp < rebroadcastCutOffTime)
                         {
-                            _system.LocalNode.Tell(new LocalNode.RelayDirectly { Inventory = item.Tx }, _system.Blockchain);
+                            localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = item.Tx }, blockchainActor);
                             item.LastBroadcastTimestamp = DateTime.UtcNow;
                         }
                     }
@@ -474,7 +479,7 @@ namespace Neo.Ledger
         /// <returns>true if more unsorted messages exist, otherwise false</returns>
         internal bool ReVerifyTopUnverifiedTransactionsIfNeeded(int maxToVerify, Snapshot snapshot)
         {
-            if (Blockchain.Singleton.Height < Blockchain.Singleton.HeaderHeight)
+            if (blockchain.Height < blockchain.HeaderHeight)
                 return false;
 
             if (_unverifiedSortedTransactions.Count > 0)

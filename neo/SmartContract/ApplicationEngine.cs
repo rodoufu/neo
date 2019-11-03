@@ -116,7 +116,7 @@ namespace Neo.SmartContract
 
         public static ApplicationEngine Run(byte[] script, IVerifiable container = null, Block persistingBlock = null, bool testMode = false, long extraGAS = default)
         {
-            using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+            using (Snapshot snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
             {
                 return Run(script, snapshot, container, persistingBlock, testMode, extraGAS);
             }

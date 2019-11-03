@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Neo.Consensus;
 
 namespace Neo.Ledger
 {
@@ -29,9 +30,9 @@ namespace Neo.Ledger
         public class FillMemoryPool { public IEnumerable<Transaction> Transactions; }
         public class FillCompleted { }
 
-        public static readonly uint MillisecondsPerBlock = ProtocolSettings.Default.MillisecondsPerBlock;
         public const uint DecrementInterval = 2000000;
         public const int MaxValidators = 1024;
+        public static readonly uint MillisecondsPerBlock = ProtocolSettings.Default.MillisecondsPerBlock;
         public static readonly uint[] GenerationAmount = { 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
         public static readonly TimeSpan TimePerBlock = TimeSpan.FromMilliseconds(MillisecondsPerBlock);
         public static readonly ECPoint[] StandbyValidators = ProtocolSettings.Default.StandbyValidators.OfType<string>().Select(p => ECPoint.DecodePoint(p.HexToBytes(), ECCurve.Secp256r1)).ToArray();
@@ -58,11 +59,13 @@ namespace Neo.Ledger
         private readonly static byte[] onPersistNativeContractScript;
         private const int MaxTxToReverifyPerIdle = 10;
         private static readonly object lockObj = new object();
-        private readonly NeoSystem system;
         private readonly List<UInt256> header_index = new List<UInt256>();
         private uint stored_header_count = 0;
         private readonly Dictionary<UInt256, Block> block_cache = new Dictionary<UInt256, Block>();
         private readonly Dictionary<uint, LinkedList<Block>> block_cache_unverified = new Dictionary<uint, LinkedList<Block>>();
+        private readonly ConsensusServiceActor consensusServiceActor;
+        private readonly LocalNodeActor localNodeActor;
+        private readonly TaskManagerActor taskManagerActor;
         internal readonly RelayCache ConsensusRelayCache = new RelayCache(100);
         private Snapshot currentSnapshot;
 
@@ -72,16 +75,6 @@ namespace Neo.Ledger
         public uint HeaderHeight => currentSnapshot.HeaderHeight;
         public UInt256 CurrentBlockHash => currentSnapshot.CurrentBlockHash;
         public UInt256 CurrentHeaderHash => currentSnapshot.CurrentHeaderHash;
-
-        private static Blockchain singleton;
-        public static Blockchain Singleton
-        {
-            get
-            {
-                while (singleton == null) Thread.Sleep(10);
-                return singleton;
-            }
-        }
 
         static Blockchain()
         {
@@ -97,15 +90,17 @@ namespace Neo.Ledger
             }
         }
 
-        public Blockchain(NeoSystem system, Store store)
+        public Blockchain(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
+            TaskManagerActor taskManagerActor,MemoryPool memoryPool, Store store)
         {
-            this.system = system;
-            this.MemPool = new MemoryPool(system, ProtocolSettings.Default.MemoryPoolMaxTransactions);
+            this.localNodeActor = localNodeActor;
+            this.consensusServiceActor = consensusServiceActor;
+            this.taskManagerActor = taskManagerActor;
+            MemPool = memoryPool;
+            MemPool.Capacity = ProtocolSettings.Default.MemoryPoolMaxTransactions;
             this.Store = store;
             lock (lockObj)
             {
-                if (singleton != null)
-                    throw new InvalidOperationException();
                 header_index.AddRange(store.GetHeaderHashList().Find().OrderBy(p => (uint)p.Key).SelectMany(p => p.Value.Hashes));
                 stored_header_count += (uint)header_index.Count;
                 if (stored_header_count == 0)
@@ -134,7 +129,6 @@ namespace Neo.Ledger
                     UpdateCurrentSnapshot();
                     MemPool.LoadPolicy(currentSnapshot);
                 }
-                singleton = this;
             }
         }
 
@@ -303,7 +297,7 @@ namespace Neo.Ledger
                     // Increase in the rate of 1 block per second in configurations with faster blocks
 
                     if (blockToPersist.Index + 100 >= header_index.Count)
-                        system.LocalNode.Tell(new LocalNode.RelayDirectly { Inventory = blockToPersist });
+                        localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = blockToPersist });
                 }
                 SaveHeaderHashList();
 
@@ -318,7 +312,7 @@ namespace Neo.Ledger
             {
                 block_cache.Add(block.Hash, block);
                 if (block.Index + 100 >= header_index.Count)
-                    system.LocalNode.Tell(new LocalNode.RelayDirectly { Inventory = block });
+                    localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = block });
                 if (block.Index == header_index.Count)
                 {
                     header_index.Add(block.Hash);
@@ -339,9 +333,9 @@ namespace Neo.Ledger
         private RelayResultReason OnNewConsensus(ConsensusPayload payload)
         {
             if (!payload.Verify(currentSnapshot)) return RelayResultReason.Invalid;
-            system.Consensus?.Tell(payload);
+            consensusServiceActor?.Tell(payload);
             ConsensusRelayCache.Add(payload);
-            system.LocalNode.Tell(new LocalNode.RelayDirectly { Inventory = payload });
+            localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = payload });
             return RelayResultReason.Succeed;
         }
 
@@ -363,7 +357,7 @@ namespace Neo.Ledger
                 snapshot.Commit();
             }
             UpdateCurrentSnapshot();
-            system.TaskManager.Tell(new TaskManager.HeaderTaskCompleted(), Sender);
+            taskManagerActor.Tell(new TaskManager.HeaderTaskCompleted(), Sender);
         }
 
         private RelayResultReason OnNewTransaction(Transaction transaction, bool relay)
@@ -380,7 +374,7 @@ namespace Neo.Ledger
             if (!MemPool.TryAdd(transaction.Hash, transaction))
                 return RelayResultReason.OutOfMemory;
             if (relay)
-                system.LocalNode.Tell(new LocalNode.RelayDirectly { Inventory = transaction });
+                localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = transaction });
             return RelayResultReason.Succeed;
         }
 
@@ -504,12 +498,6 @@ namespace Neo.Ledger
         {
             base.PostStop();
             currentSnapshot?.Dispose();
-        }
-
-        public static Props Props(NeoSystem system, Store store)
-        {
-            return system.ActorSystem.DI().Props<Blockchain>().WithMailbox("blockchain-mailbox");
-//            return Akka.Actor.Props.Create(() => new Blockchain(system, store)).WithMailbox("blockchain-mailbox");
         }
 
         private void SaveHeaderHashList(Snapshot snapshot = null)

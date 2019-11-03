@@ -11,52 +11,56 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
 using Akka.DI.Core;
+using Neo.Consensus;
 
 namespace Neo.Network.P2P
 {
     public class LocalNode : Peer
     {
-        public class Relay { public IInventory Inventory; }
-        internal class RelayDirectly { public IInventory Inventory; }
-        internal class SendDirectly { public IInventory Inventory; }
+        public class Relay
+        {
+            public IInventory Inventory;
+        }
+
+        internal class RelayDirectly
+        {
+            public IInventory Inventory;
+        }
+
+        internal class SendDirectly
+        {
+            public IInventory Inventory;
+        }
 
         public const uint ProtocolVersion = 0;
 
         private static readonly object lockObj = new object();
-        private readonly NeoSystem system;
-        internal readonly ConcurrentDictionary<IActorRef, RemoteNode> RemoteNodes = new ConcurrentDictionary<IActorRef, RemoteNode>();
+
+        internal readonly ConcurrentDictionary<IActorRef, RemoteNode> RemoteNodes =
+            new ConcurrentDictionary<IActorRef, RemoteNode>();
 
         public int ConnectedCount => RemoteNodes.Count;
         public int UnconnectedCount => UnconnectedPeers.Count;
         public static readonly uint Nonce;
         public static string UserAgent { get; set; }
-
-        private static LocalNode singleton;
-        public static LocalNode Singleton
-        {
-            get
-            {
-                while (singleton == null) Thread.Sleep(10);
-                return singleton;
-            }
-        }
+        private readonly ConsensusServiceActor consensusServiceActor;
+        private readonly BlockchainActor blockchainActor;
+        private readonly NeoContainer neoContainer;
 
         static LocalNode()
         {
             Random rand = new Random();
-            Nonce = (uint)rand.Next();
-            UserAgent = $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
+            Nonce = (uint) rand.Next();
+            UserAgent =
+                $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
         }
 
-        public LocalNode(NeoSystem system)
+        public LocalNode(ConsensusServiceActor consensusServiceActor, BlockchainActor blockchainActor,
+            NeoContainer neoContainer)
         {
-            lock (lockObj)
-            {
-                if (singleton != null)
-                    throw new InvalidOperationException();
-                this.system = system;
-                singleton = this;
-            }
+            this.consensusServiceActor = consensusServiceActor;
+            this.blockchainActor = blockchainActor;
+            this.neoContainer = neoContainer;
         }
 
         private void BroadcastMessage(MessageCommand command, ISerializable payload = null)
@@ -82,7 +86,9 @@ namespace Neo.Network.P2P
             {
                 return null;
             }
-            ipAddress = entry.AddressList.FirstOrDefault(p => p.AddressFamily == AddressFamily.InterNetwork || p.IsIPv6Teredo);
+
+            ipAddress = entry.AddressList.FirstOrDefault(p =>
+                p.AddressFamily == AddressFamily.InterNetwork || p.IsIPv6Teredo);
             if (ipAddress == null) return null;
             return new IPEndPoint(ipAddress, port);
         }
@@ -105,6 +111,7 @@ namespace Neo.Network.P2P
                     {
                         continue;
                     }
+
                     if (seed == null) continue;
                     seedsToTake--;
                     yield return seed;
@@ -160,13 +167,13 @@ namespace Neo.Network.P2P
         private void OnRelay(IInventory inventory)
         {
             if (inventory is Transaction transaction)
-                system.Consensus?.Tell(transaction);
-            system.Blockchain.Tell(inventory);
+                consensusServiceActor?.Tell(transaction);
+            blockchainActor.Tell(inventory);
         }
 
         private void OnRelayDirectly(IInventory inventory)
         {
-            Connections.Tell(new RemoteNode.Relay { Inventory = inventory });
+            Connections.Tell(new RemoteNode.Relay {Inventory = inventory});
         }
 
         private void OnSendDirectly(IInventory inventory)
@@ -174,15 +181,7 @@ namespace Neo.Network.P2P
             Connections.Tell(inventory);
         }
 
-        public static Props Props(NeoSystem system)
-        {
-            return system.ActorSystem.DI().Props<LocalNode>();
-//            return Akka.Actor.Props.Create(() => new LocalNode(system));
-        }
-
-        protected override Props ProtocolProps(object connection, IPEndPoint remote, IPEndPoint local)
-        {
-            return RemoteNode.Props(system, connection, remote, local);
-        }
+        protected override Props ProtocolProps(object connection, IPEndPoint remote, IPEndPoint local) =>
+            neoContainer.RemoteNodeProps(connection, remote, local);
     }
 }

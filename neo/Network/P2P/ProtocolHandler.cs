@@ -1,7 +1,6 @@
 using Akka.Actor;
 using Akka.Configuration;
 using Neo.Cryptography;
-using Neo.IO;
 using Neo.IO.Actors;
 using Neo.IO.Caching;
 using Neo.Ledger;
@@ -13,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Akka.DI.Core;
 
 namespace Neo.Network.P2P
 {
@@ -20,18 +20,27 @@ namespace Neo.Network.P2P
     {
         public class SetFilter { public BloomFilter Filter; }
 
-        private readonly NeoSystem system;
         private readonly FIFOSet<UInt256> knownHashes;
         private readonly FIFOSet<UInt256> sentHashes;
+        private readonly TaskManagerActor taskManagerActor;
+        private readonly LocalNodeActor localNodeActor;
+        private readonly LocalNode localNode;
+        private readonly Blockchain blockchain;
+        private readonly BlockchainActor blockchainActor;
         private VersionPayload version;
         private bool verack = false;
         private BloomFilter bloom_filter;
 
-        public ProtocolHandler(NeoSystem system)
+        public ProtocolHandler(TaskManagerActor taskManagerActor, LocalNodeActor localNodeActor,
+            Blockchain blockchain, BlockchainActor blockchainActor, LocalNode localNode)
         {
-            this.system = system;
-            this.knownHashes = new FIFOSet<UInt256>(Blockchain.Singleton.MemPool.Capacity * 2);
-            this.sentHashes = new FIFOSet<UInt256>(Blockchain.Singleton.MemPool.Capacity * 2);
+            this.blockchain = blockchain;
+            this.blockchainActor = blockchainActor;
+            this.taskManagerActor = taskManagerActor;
+            this.localNodeActor = localNodeActor;
+            this.localNode = localNode;
+            this.knownHashes = new FIFOSet<UInt256>(blockchain.MemPool.Capacity * 2);
+            this.sentHashes = new FIFOSet<UInt256>(blockchain.MemPool.Capacity * 2);
         }
 
         protected override void OnReceive(object message)
@@ -118,7 +127,7 @@ namespace Neo.Network.P2P
 
         private void OnAddrMessageReceived(AddrPayload payload)
         {
-            system.LocalNode.Tell(new Peer.Peers
+            localNodeActor.Tell(new Peer.Peers
             {
                 EndPoints = payload.AddressList.Select(p => p.EndPoint).Where(p => p.Port > 0)
             });
@@ -145,7 +154,7 @@ namespace Neo.Network.P2P
         private void OnGetAddrMessageReceived()
         {
             Random rand = new Random();
-            IEnumerable<RemoteNode> peers = LocalNode.Singleton.RemoteNodes.Values
+            IEnumerable<RemoteNode> peers = localNode.RemoteNodes.Values
                 .Where(p => p.ListenerTcpPort > 0)
                 .GroupBy(p => p.Remote.Address, (k, g) => g.First())
                 .OrderBy(p => rand.Next())
@@ -159,15 +168,15 @@ namespace Neo.Network.P2P
         {
             UInt256 hash = payload.HashStart;
             int count = payload.Count < 0 || payload.Count > InvPayload.MaxHashesCount ? InvPayload.MaxHashesCount : payload.Count;
-            TrimmedBlock state = Blockchain.Singleton.Store.GetBlocks().TryGet(hash);
+            TrimmedBlock state = blockchain.Store.GetBlocks().TryGet(hash);
             if (state == null) return;
             List<UInt256> hashes = new List<UInt256>();
             for (uint i = 1; i <= count; i++)
             {
                 uint index = state.Index + i;
-                if (index > Blockchain.Singleton.Height)
+                if (index > blockchain.Height)
                     break;
-                hash = Blockchain.Singleton.GetBlockHash(index);
+                hash = blockchain.GetBlockHash(index);
                 if (hash == null) break;
                 hashes.Add(hash);
             }
@@ -183,12 +192,12 @@ namespace Neo.Network.P2P
                 switch (payload.Type)
                 {
                     case InventoryType.TX:
-                        Transaction tx = Blockchain.Singleton.GetTransaction(hash);
+                        Transaction tx = blockchain.GetTransaction(hash);
                         if (tx != null)
                             Context.Parent.Tell(Message.Create(MessageCommand.Transaction, tx));
                         break;
                     case InventoryType.Block:
-                        Block block = Blockchain.Singleton.GetBlock(hash);
+                        Block block = blockchain.GetBlock(hash);
                         if (block != null)
                         {
                             if (bloom_filter == null)
@@ -203,7 +212,7 @@ namespace Neo.Network.P2P
                         }
                         break;
                     case InventoryType.Consensus:
-                        if (Blockchain.Singleton.ConsensusRelayCache.TryGet(hash, out IInventory inventoryConsensus))
+                        if (blockchain.ConsensusRelayCache.TryGet(hash, out IInventory inventoryConsensus))
                             Context.Parent.Tell(Message.Create(MessageCommand.Consensus, inventoryConsensus));
                         break;
                 }
@@ -214,14 +223,14 @@ namespace Neo.Network.P2P
         {
             UInt256 hash = payload.HashStart;
             int count = payload.Count < 0 || payload.Count > HeadersPayload.MaxHeadersCount ? HeadersPayload.MaxHeadersCount : payload.Count;
-            DataCache<UInt256, TrimmedBlock> cache = Blockchain.Singleton.Store.GetBlocks();
+            DataCache<UInt256, TrimmedBlock> cache = blockchain.Store.GetBlocks();
             TrimmedBlock state = cache.TryGet(hash);
             if (state == null) return;
             List<Header> headers = new List<Header>();
             for (uint i = 1; i <= count; i++)
             {
                 uint index = state.Index + i;
-                hash = Blockchain.Singleton.GetBlockHash(index);
+                hash = blockchain.GetBlockHash(index);
                 if (hash == null) break;
                 Header header = cache.TryGet(hash)?.Header;
                 if (header == null) break;
@@ -234,13 +243,13 @@ namespace Neo.Network.P2P
         private void OnHeadersMessageReceived(HeadersPayload payload)
         {
             if (payload.Headers.Length == 0) return;
-            system.Blockchain.Tell(payload.Headers, Context.Parent);
+            blockchainActor.Tell(payload.Headers, Context.Parent);
         }
 
         private void OnInventoryReceived(IInventory inventory)
         {
-            system.TaskManager.Tell(new TaskManager.TaskCompleted { Hash = inventory.Hash }, Context.Parent);
-            system.LocalNode.Tell(new LocalNode.Relay { Inventory = inventory });
+            taskManagerActor.Tell(new TaskManager.TaskCompleted { Hash = inventory.Hash }, Context.Parent);
+            localNodeActor.Tell(new LocalNode.Relay { Inventory = inventory });
         }
 
         private void OnInvMessageReceived(InvPayload payload)
@@ -250,28 +259,28 @@ namespace Neo.Network.P2P
             switch (payload.Type)
             {
                 case InventoryType.Block:
-                    using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+                    using (Snapshot snapshot = blockchain.GetSnapshot())
                         hashes = hashes.Where(p => !snapshot.ContainsBlock(p)).ToArray();
                     break;
                 case InventoryType.TX:
-                    using (Snapshot snapshot = Blockchain.Singleton.GetSnapshot())
+                    using (Snapshot snapshot = blockchain.GetSnapshot())
                         hashes = hashes.Where(p => !snapshot.ContainsTransaction(p)).ToArray();
                     break;
             }
             if (hashes.Length == 0) return;
-            system.TaskManager.Tell(new TaskManager.NewTasks { Payload = InvPayload.Create(payload.Type, hashes) }, Context.Parent);
+            taskManagerActor.Tell(new TaskManager.NewTasks { Payload = InvPayload.Create(payload.Type, hashes) }, Context.Parent);
         }
 
         private void OnMemPoolMessageReceived()
         {
-            foreach (InvPayload payload in InvPayload.CreateGroup(InventoryType.TX, Blockchain.Singleton.MemPool.GetVerifiedTransactions().Select(p => p.Hash).ToArray()))
+            foreach (InvPayload payload in InvPayload.CreateGroup(InventoryType.TX, blockchain.MemPool.GetVerifiedTransactions().Select(p => p.Hash).ToArray()))
                 Context.Parent.Tell(Message.Create(MessageCommand.Inv, payload));
         }
 
         private void OnPingMessageReceived(PingPayload payload)
         {
             Context.Parent.Tell(payload);
-            Context.Parent.Tell(Message.Create(MessageCommand.Pong, PingPayload.Create(Blockchain.Singleton.Height, payload.Nonce)));
+            Context.Parent.Tell(Message.Create(MessageCommand.Pong, PingPayload.Create(blockchain.Height, payload.Nonce)));
         }
 
         private void OnPongMessageReceived(PingPayload payload)
@@ -291,10 +300,6 @@ namespace Neo.Network.P2P
             Context.Parent.Tell(payload);
         }
 
-        public static Props Props(NeoSystem system)
-        {
-            return Akka.Actor.Props.Create(() => new ProtocolHandler(system)).WithMailbox("protocol-handler-mailbox");
-        }
     }
 
     internal class ProtocolHandlerMailbox : PriorityMailbox
