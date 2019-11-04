@@ -1,0 +1,66 @@
+digraph ioc {
+//graph [bgcolor=lightgoldenrodyellow]
+//rankdir=LR;
+size="11"
+//Empty [ label="", width=0, height=0, style = invis ];
+node [shape = circle]; ConsensusContext;
+node [shape = circle]; InteropService;
+node [shape = circle]; NeoSystem;
+node [shape = circle]; ProtocolHandler;
+node [shape = circle]; RemoteNode;
+node [shape = circle]; RpcServer;
+node [shape = circle]; Store;
+node [shape = circle]; Wallet;
+
+node [shape = circle]; BlockchainActor;
+node [shape = circle]; LocalNodeActor;
+
+node [shape = circle]; ConsensusService;
+node [shape = circle]; ConsensusServiceActor;
+
+node [shape = circle]; TaskManager;
+node [shape = circle]; TaskManagerActor;
+
+node [shape = circle, style = filled, color = yellow]; ActorSystem;
+node [shape = circle, style = filled, color = yellow]; Blockchain;
+node [shape = circle, style = filled, color = yellow]; LocalNode;
+
+//Empty -> Normal [label = ""];
+ApplicationEngine -> Blockchain [ label = " uses "];
+
+Blockchain -> NeoSystem [ label = ""];
+Blockchain -> Store [ label = ""];
+
+ConsensusContext -> Store [ label = ""];
+ConsensusContext -> Wallet [ label = ""];
+
+ConsensusService -> LocalNodeActor [ label = ""];
+ConsensusService -> TaskManagerActor [ label = ""];
+ConsensusService -> Store [ label = ""];
+ConsensusService -> Wallet [ label = ""];
+
+ConsensusServiceActor -> ConsensusService [ label = ""];
+
+InteropService -> Blockchain [ label = " uses "];
+
+LocalNode -> NeoSystem [ label = ""];
+
+NeoSystem -> Store [ label = ""];
+NeoSystem -> BlockchainActor [ label = ""];
+NeoSystem -> LocalNodeActor [ label = ""];
+NeoSystem -> TaskManagerActor [ label = ""];
+NeoSystem -> ActorSystem [ label = ""];
+NeoSystem -> RpcServer [ label = ""];
+
+ProtocolHandler -> NeoSystem [ label = ""];
+
+RemoteNode -> NeoSystem [ label = ""];
+
+TaskManager -> NeoSystem [ label = ""];
+
+BlockchainActor -> Blockchain [ label = ""];
+LocalNodeActor -> LocalNode [ label = ""];
+TaskManagerActor -> TaskManager [ label = ""];
+
+}
+

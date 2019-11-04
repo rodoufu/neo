@@ -1,0 +1,95 @@
+digraph ioc {
+//graph [bgcolor=lightgoldenrodyellow]
+//rankdir=LR;
+size="11"
+//Empty [ label="", width=0, height=0, style = invis ];
+node [shape = circle]; ApplicationEngine;
+node [shape = circle]; ConsensusContext;
+node [shape = circle]; InteropService;
+node [shape = circle]; MemoryPool;
+node [shape = circle]; NeoSystem;
+node [shape = circle]; ProtocolHandler;
+node [shape = circle]; RemoteNode;
+node [shape = circle]; RpcServer;
+node [shape = circle]; Store;
+node [shape = circle]; Wallet;
+
+node [shape = circle]; BlockchainActor;
+node [shape = circle]; LocalNodeActor;
+
+node [shape = circle]; ConsensusService;
+node [shape = circle]; ConsensusServiceActor;
+
+node [shape = circle]; TaskManager;
+node [shape = circle]; TaskManagerActor;
+
+node [shape = circle, style = filled, color = yellow]; ActorSystem;
+node [shape = circle, style = filled, color = yellow]; Blockchain;
+node [shape = circle, style = filled, color = yellow]; LocalNode;
+node [shape = circle, style = filled, color = yellow]; NeoContainer;
+
+//Empty -> Normal [label = ""];
+ApplicationEngine -> Blockchain [ label = " uses "];
+
+Blockchain -> LocalNodeActor [ label = ""];
+Blockchain -> ConsensusServiceActor [ label = ""];
+Blockchain -> TaskManagerActor [ label = ""];
+Blockchain -> MemoryPool [ label = ""];
+Blockchain -> Store [ label = ""];
+
+ConsensusContext -> Store [ label = ""];
+ConsensusContext -> Wallet [ label = ""];
+
+ConsensusService -> LocalNodeActor [ label = ""];
+ConsensusService -> TaskManagerActor [ label = ""];
+ConsensusService -> Store [ label = ""];
+ConsensusService -> Wallet [ label = ""];
+ConsensusService -> LocalNode [ label = ""];
+ConsensusService -> Blockchain [ label = ""];
+ConsensusService -> ConsensusContext [ label = ""];
+
+ConsensusServiceActor -> ConsensusService [ label = ""];
+
+InteropService -> Blockchain [ label = " uses "];
+
+MemoryPool -> Blockchain [ label = ""];
+MemoryPool -> BlockchainActor [ label = ""];
+MemoryPool -> LocalNodeActor [ label = ""];
+
+NeoSystem -> LocalNodeActor [ label = ""];
+NeoSystem -> ConsensusServiceActor [ label = ""];
+NeoSystem -> RpcServer [ label = ""];
+NeoSystem -> BlockchainActor [ label = ""];
+NeoSystem -> Store [ label = ""];
+
+ConsensusContext -> Blockchain [ label = ""];
+ConsensusContext -> Wallet [ label = ""];
+
+LocalNode -> ConsensusServiceActor [ label = ""];
+LocalNode -> BlockchainActor [ label = ""];
+LocalNode -> NeoContainer [ label = ""];
+
+NeoContainer -> ActorSystem [ label = ""];
+NeoContainer -> Store [ label = ""];
+NeoContainer -> Wallet [ label = ""];
+
+TaskManager -> LocalNodeActor [ label = ""];
+TaskManager -> Blockchain [ label = ""];
+
+RemoteNode -> Blockchain [ label = ""];
+RemoteNode -> LocalNode [ label = ""];
+RemoteNode -> TaskManagerActor [ label = ""];
+
+ProtocolHandler -> Blockchain [ label = ""];
+ProtocolHandler -> BlockchainActor [ label = ""];
+ProtocolHandler -> LocalNode [ label = ""];
+ProtocolHandler -> LocalNodeActor [ label = ""];
+ProtocolHandler -> TaskManagerActor [ label = ""];
+
+BlockchainActor -> Blockchain [ label = ""];
+LocalNodeActor -> LocalNode [ label = ""];
+TaskManagerActor -> MemoryPool [ label = ""];
+TaskManagerActor -> Store [ label = ""];
+
+}
+
