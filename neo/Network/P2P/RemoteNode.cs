@@ -38,7 +38,7 @@ namespace Neo.Network.P2P
             : base(connection, remote, local)
         {
             this.localNode = localNode;
-            this.protocol = Context.ActorOf(protocolHandlerProps);
+            this.protocol = protocolHandlerProps;
             localNode.RemoteNodes.TryAdd(Self, this);
             this.taskManagerActor = taskManagerActor;
 

@@ -50,8 +50,8 @@ namespace Neo.Consensus
         private bool isRecovering = false;
 
         // FIXME @rodoufu Use IoC here
-        public ConsensusService(LocalNodeActor localNode, TaskManagerActor taskManager, Store store, Wallet wallet,
-            LocalNode theLocalNode, Blockchain blockchain)
+        internal ConsensusService(LocalNodeActor localNode, TaskManagerActor taskManager, LocalNode theLocalNode,
+            Blockchain blockchain, Store store, Wallet wallet)
             : this(localNode, taskManager, new ConsensusContext(wallet, store))
         {
             this.theLocalNode = theLocalNode;

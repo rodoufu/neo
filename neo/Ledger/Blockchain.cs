@@ -56,7 +56,7 @@ namespace Neo.Ledger
             Transactions = new[] { DeployNativeContracts() }
         };
 
-        private readonly static byte[] onPersistNativeContractScript;
+        private static readonly byte[] onPersistNativeContractScript;
         private const int MaxTxToReverifyPerIdle = 10;
         private static readonly object lockObj = new object();
         private readonly List<UInt256> header_index = new List<UInt256>();

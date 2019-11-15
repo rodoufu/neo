@@ -4,6 +4,7 @@ using Akka.Actor;
 using Akka.DI.AutoFac;
 using Akka.DI.Core;
 using Autofac;
+using Autofac.Builder;
 using Neo.Consensus;
 using Neo.Ledger;
 using Neo.Network.P2P;
@@ -51,13 +52,38 @@ namespace Neo
         public NeoContainer()
         {
             Builder = new ContainerBuilder();
-
-            RegisterActors();
             Builder.RegisterInstance(this).SingleInstance();
+            Builder.Register(c => ActorSystem.Create(nameof(NeoSystem),
+                $"akka {{ log-dead-letters = off }}" +
+                $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
+                $"task-manager-mailbox {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
+                $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
+                $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
+                $"consensus-service-mailbox {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}")
+            ).SingleInstance().OnActivated(h =>
+            {
+                h.Instance.UseAutofac(Container);
+                var propsResolver = new AutoFacDependencyResolver(Container, h.Instance);
+            });
+
+            Register<Blockchain, BlockchainActor>(Builder, "blockchain-mailbox", true);
+            Register<LocalNode, LocalNodeActor>(Builder, string.Empty, true);
+            Register<TaskManager, TaskManagerActor>(Builder, "task-manager-mailbox");
+            Register<ConsensusService, ConsensusServiceActor>(Builder, "consensus-service-mailbox");
+            Register<ProtocolHandler, ProtocolHandlerProps>(Builder, "protocol-handler-mailbox");
 
             Builder.RegisterType<LocalNode>().SingleInstance().AsSelf();
             Builder.RegisterType<TaskManager>().AsSelf();
-            Builder.RegisterType<ConsensusService>().AsSelf();
+
+            Builder.Register((c, p) =>
+                new ConsensusService(
+                    c.Resolve<LocalNodeActor>(),
+                    c.Resolve<TaskManagerActor>(),
+                    c.Resolve<LocalNode>(),
+                    c.Resolve<Blockchain>(),
+                    p.Named<Store>("store"),
+                    p.Named<Wallet>("wallet")
+                )).As<ConsensusService>();
 
             Builder.Register((c, p) =>
                 new MemoryPool(
@@ -92,21 +118,6 @@ namespace Neo
                     c.Resolve<BlockchainActor>(),
                     p.Named<Store>("store")
                 )).As<NeoSystem>();
-
-            Builder.Register(c =>
-                    ActorSystem.Create(nameof(NeoSystem),
-                        $"akka {{ log-dead-letters = off }}" +
-                        $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
-                        $"task-manager-mailbox {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
-                        $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
-                        $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
-                        $"consensus-service-mailbox {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}")
-                )
-                .SingleInstance().OnActivated(h =>
-                {
-                    h.Instance.UseAutofac(Container);
-                    var propsResolver = new AutoFacDependencyResolver(Container, h.Instance);
-                });
         }
 
         /// <summary>
@@ -115,10 +126,10 @@ namespace Neo
         /// </summary>
         public IContainer Container => _container ?? Builder.Build();
 
-        private void Register<T1, T2>(ContainerBuilder builder, string mailBox)
+        private void Register<T1, T2>(ContainerBuilder builder, string mailBox, bool singleInstance = false)
             where T1 : ActorBase
         {
-            builder.Register(c =>
+            var registration = builder.Register(c =>
             {
                 var actorSystem = c.Resolve<ActorSystem>();
                 var props = actorSystem.DI().Props<T1>();
@@ -128,56 +139,25 @@ namespace Neo
                 }
 
                 return actorSystem.ActorOf(props);
-            }).As<T2>();
-        }
-
-        private void RegisterActors()
-        {
-            Builder.Register(c =>
+            });
+            if (singleInstance)
             {
-                var actorSystem = c.Resolve<ActorSystem>();
-                var props = actorSystem.DI().Props<Blockchain>().WithMailbox("blockchain-mailbox");
-                return actorSystem.ActorOf(props);
-            }).As<BlockchainActor>();
+                registration.SingleInstance();
+            }
 
-            Builder.Register(c =>
-            {
-                var actorSystem = c.Resolve<ActorSystem>();
-                var props = actorSystem.DI().Props<LocalNode>();
-                return actorSystem.ActorOf(props);
-            }).As<LocalNodeActor>();
-
-            Builder.Register(c =>
-            {
-                var actorSystem = c.Resolve<ActorSystem>();
-                var props = actorSystem.DI().Props<TaskManager>().WithMailbox("task-manager-mailbox");
-                return actorSystem.ActorOf(props);
-            }).As<TaskManagerActor>();
-
-            Builder.Register(c =>
-            {
-                var actorSystem = c.Resolve<ActorSystem>();
-                var props = actorSystem.DI().Props<ConsensusService>().WithMailbox("consensus-service-mailbox");
-                return actorSystem.ActorOf(props);
-            }).As<ConsensusServiceActor>();
-
-            Builder.Register(c =>
-            {
-                var actorSystem = c.Resolve<ActorSystem>();
-                return actorSystem.DI().Props<ProtocolHandler>().WithMailbox("protocol-handler-mailbox");
-            }).As<ProtocolHandlerProps>();
+            registration.As<T2>();
         }
 
         // TODO remove
         public Blockchain Blockchain => Container.Resolve<Blockchain>();
 
-        public Props RemoteNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
+        public RemoteNodeProps ResolveNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
         {
             var remoteNode = Container.Resolve<RemoteNode>();
             remoteNode.SetConnection(connection);
             remoteNode.Remote = remote;
             remoteNode.Local = local;
-            return Props.Create(() => remoteNode).WithMailbox("remote-node-mailbox");
+            return (RemoteNodeProps) Props.Create(() => remoteNode).WithMailbox("remote-node-mailbox");
         }
 
         public NeoSystem ResolveNeoSystem(Store store) =>
@@ -197,6 +177,5 @@ namespace Neo
 
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
             Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
-
     }
 }
