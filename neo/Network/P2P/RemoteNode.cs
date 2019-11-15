@@ -33,8 +33,8 @@ namespace Neo.Network.P2P
         public uint LastBlockIndex { get; private set; } = 0;
         public bool IsFullNode { get; private set; } = false;
 
-        public RemoteNode(ProtocolHandlerProps protocolHandlerProps, object connection, IPEndPoint remote, IPEndPoint local, LocalNode localNode,
-            Blockchain blockchain, TaskManagerActor taskManagerActor)
+        public RemoteNode(ProtocolHandlerProps protocolHandlerProps, object connection, IPEndPoint remote, IPEndPoint local,
+            LocalNode localNode, Blockchain blockchain, TaskManagerActor taskManagerActor)
             : base(connection, remote, local)
         {
             this.localNode = localNode;

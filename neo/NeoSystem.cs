@@ -26,7 +26,7 @@ namespace Neo
         private ChannelsConfig start_message = null;
         private bool suspend = false;
 
-        public NeoSystem(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
+        internal NeoSystem(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
             RpcServer rpcServer, BlockchainActor blockchainActor, Store store)
         {
             this.localNodeActor = localNodeActor;

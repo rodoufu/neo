@@ -76,7 +76,7 @@ namespace Neo.Network.RPC
         private readonly BlockchainActor blockchainActor;
         private readonly LocalNode localNode;
 
-        public RpcServer(Blockchain blockchain, BlockchainActor blockchainActor, LocalNode localNode,
+        internal RpcServer(Blockchain blockchain, BlockchainActor blockchainActor, LocalNode localNode,
             Wallet wallet = null, long maxGasInvoke = default)
         {
             Wallet = wallet;

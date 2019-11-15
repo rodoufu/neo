@@ -1,19 +1,15 @@
 using System;
 using System.Net;
-using System.Security;
 using Akka.Actor;
 using Akka.DI.AutoFac;
 using Akka.DI.Core;
 using Autofac;
 using Neo.Consensus;
-using Neo.Cryptography;
-using Neo.IO.Json;
 using Neo.Ledger;
 using Neo.Network.P2P;
+using Neo.Network.RPC;
 using Neo.Persistence;
 using Neo.Wallets;
-using Neo.Wallets.NEP6;
-using Neo.Wallets.SQLite;
 
 namespace Neo
 {
@@ -22,6 +18,7 @@ namespace Neo
     /// </summary>
     public class NeoContainer
     {
+        // TODO remove
         private static NeoContainer _instance;
 
         public static NeoContainer Instance
@@ -38,9 +35,9 @@ namespace Neo
             private set => _instance = value;
         }
 
-        public static void NeoInstance(Store store, Wallet wallet)
+        public static void NeoInstance()
         {
-            Instance = new NeoContainer(store, wallet);
+            Instance = new NeoContainer();
         }
 
         /// <summary>
@@ -51,19 +48,50 @@ namespace Neo
 
         private IContainer _container;
 
-        private NeoContainer(Store store, Wallet wallet)
+        public NeoContainer()
         {
             Builder = new ContainerBuilder();
 
+            RegisterActors();
             Builder.RegisterInstance(this).SingleInstance();
-            Builder.RegisterInstance(store);
-            Builder.RegisterInstance(wallet);
 
-            Builder.RegisterType<Blockchain>().SingleInstance().AsSelf();
             Builder.RegisterType<LocalNode>().SingleInstance().AsSelf();
             Builder.RegisterType<TaskManager>().AsSelf();
             Builder.RegisterType<ConsensusService>().AsSelf();
-            Builder.RegisterType<NeoSystem>().AsSelf();
+
+            Builder.Register((c, p) =>
+                new MemoryPool(
+                    c.Resolve<BlockchainActor>(),
+                    c.Resolve<LocalNodeActor>(),
+                    p.Named<int>("capacity")
+                )).As<MemoryPool>();
+
+            Builder.Register((c, p) =>
+                new Blockchain(
+                    c.Resolve<LocalNodeActor>(),
+                    c.Resolve<ConsensusServiceActor>(),
+                    c.Resolve<TaskManagerActor>(),
+                    p.Named<MemoryPool>("memoryPool"),
+                    p.Named<Store>("store")
+                )).SingleInstance().As<Blockchain>();
+
+            Builder.Register((c, p) =>
+                new RpcServer(
+                    c.Resolve<Blockchain>(),
+                    c.Resolve<BlockchainActor>(),
+                    c.Resolve<LocalNode>(),
+                    p.Named<Wallet>("wallet"),
+                    p.Named<long>("maxGasInvoke")
+                )).As<RpcServer>();
+
+            Builder.Register((c, p) =>
+                new NeoSystem(
+                    c.Resolve<LocalNodeActor>(),
+                    c.Resolve<ConsensusServiceActor>(),
+                    c.Resolve<RpcServer>(),
+                    c.Resolve<BlockchainActor>(),
+                    p.Named<Store>("store")
+                )).As<NeoSystem>();
 
             Builder.Register(c =>
                     ActorSystem.Create(nameof(NeoSystem),
@@ -79,8 +107,6 @@ namespace Neo
                     h.Instance.UseAutofac(Container);
                     var propsResolver = new AutoFacDependencyResolver(Container, h.Instance);
                 });
-
-            RegisterActors();
         }
 
         /// <summary>
@@ -142,6 +168,7 @@ namespace Neo
             }).As<ProtocolHandlerProps>();
         }
 
+        // TODO remove
         public Blockchain Blockchain => Container.Resolve<Blockchain>();
 
         public Props RemoteNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
@@ -152,6 +179,24 @@ namespace Neo
             remoteNode.Local = local;
             return Props.Create(() => remoteNode).WithMailbox("remote-node-mailbox");
         }
+
+        public NeoSystem ResolveNeoSystem(Store store) =>
+            Container.Resolve<NeoSystem>(new NamedParameter("store", store));
+
+        public RpcServer ResolveRpcServer(Wallet wallet = null, long maxGasInvoke = default) =>
+            Container.Resolve<RpcServer>(
+                new NamedParameter("wallet", wallet),
+                new NamedParameter("maxGasInvoke", maxGasInvoke)
+            );
+
+        public Blockchain ResolveBlockchain(MemoryPool memoryPool, Store store) =>
+            Container.Resolve<Blockchain>(
+                new NamedParameter("memoryPool", memoryPool),
+                new NamedParameter("store", store)
+            );
+
+        public MemoryPool ResolveMemoryPool(int capacity = 100) =>
+            Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
 
     }
 }

@@ -90,8 +90,8 @@ namespace Neo.Ledger
             }
         }
 
-        public Blockchain(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
-            TaskManagerActor taskManagerActor,MemoryPool memoryPool, Store store)
+        internal Blockchain(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
+            TaskManagerActor taskManagerActor, MemoryPool memoryPool, Store store)
         {
             this.localNodeActor = localNodeActor;
             this.consensusServiceActor = consensusServiceActor;
@@ -381,7 +381,7 @@ namespace Neo.Ledger
         private void OnPersistCompleted(Block block)
         {
             block_cache.Remove(block.Hash);
-            MemPool.UpdatePoolForBlockPersisted(block, currentSnapshot);
+            MemPool.UpdatePoolForBlockPersisted(block, currentSnapshot, this);
             Context.System.EventStream.Publish(new PersistCompleted { Block = block });
         }
 
@@ -414,7 +414,7 @@ namespace Neo.Ledger
                     Sender.Tell(OnNewConsensus(payload));
                     break;
                 case Idle _:
-                    if (MemPool.ReVerifyTopUnverifiedTransactionsIfNeeded(MaxTxToReverifyPerIdle, currentSnapshot))
+                    if (MemPool.ReVerifyTopUnverifiedTransactionsIfNeeded(MaxTxToReverifyPerIdle, currentSnapshot, this))
                         Self.Tell(Idle.Instance, ActorRefs.NoSender);
                     break;
             }
@@ -537,7 +537,7 @@ namespace Neo.Ledger
         {
         }
 
-        internal protected override bool IsHighPriority(object message)
+        protected internal override bool IsHighPriority(object message)
         {
             switch (message)
             {

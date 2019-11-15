@@ -26,7 +26,6 @@ namespace Neo.Ledger
         // These two are not expected to be hit, they are just safegaurds.
         private static readonly double MaxMillisecondsToReverifyTxPerIdle = (double)Blockchain.MillisecondsPerBlock / 15;
 
-        private readonly Blockchain blockchain;
         private readonly BlockchainActor blockchainActor;
         private readonly LocalNodeActor localNodeActor;
 
@@ -97,11 +96,9 @@ namespace Neo.Ledger
 
         public int UnVerifiedCount => _unverifiedTransactions.Count;
 
-        public MemoryPool(Blockchain blockchain, BlockchainActor blockchainActor,
-            LocalNodeActor localNodeActor, int capacity = 100)
+        internal MemoryPool(BlockchainActor blockchainActor, LocalNodeActor localNodeActor, int capacity = 100)
         {
             Capacity = capacity;
-            this.blockchain = blockchain;
             this.blockchainActor = blockchainActor;
             this.localNodeActor = localNodeActor;
         }
@@ -346,7 +343,7 @@ namespace Neo.Ledger
         }
 
         // Note: this must only be called from a single thread (the Blockchain actor)
-        internal void UpdatePoolForBlockPersisted(Block block, Snapshot snapshot)
+        internal void UpdatePoolForBlockPersisted(Block block, Snapshot snapshot, Blockchain blockchain)
         {
             bool policyChanged = LoadPolicy(snapshot);
 
@@ -477,7 +474,7 @@ namespace Neo.Ledger
         /// <param name="maxToVerify">Max transactions to reverify, the value passed cam be >=1</param>
         /// <param name="snapshot">The snapshot to use for verifying.</param>
         /// <returns>true if more unsorted messages exist, otherwise false</returns>
-        internal bool ReVerifyTopUnverifiedTransactionsIfNeeded(int maxToVerify, Snapshot snapshot)
+        internal bool ReVerifyTopUnverifiedTransactionsIfNeeded(int maxToVerify, Snapshot snapshot, Blockchain blockchain)
         {
             if (blockchain.Height < blockchain.HeaderHeight)
                 return false;
