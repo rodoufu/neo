@@ -90,12 +90,12 @@ namespace Neo.Ledger
             }
         }
 
-        internal Blockchain(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
-            TaskManagerActor taskManagerActor, MemoryPool memoryPool, Store store)
+        internal Blockchain(NeoContainer neoContainer, MemoryPool memoryPool, Store store)
         {
-            this.localNodeActor = localNodeActor;
-            this.consensusServiceActor = consensusServiceActor;
-            this.taskManagerActor = taskManagerActor;
+            this.localNodeActor = neoContainer.ResolveLocalNodeActor();
+            this.consensusServiceActor = neoContainer.ResolveConsensusServiceActor();
+            this.taskManagerActor = neoContainer.ResolveTaskManagerActor();
+
             MemPool = memoryPool;
             MemPool.Capacity = ProtocolSettings.Default.MemoryPoolMaxTransactions;
             this.Store = store;

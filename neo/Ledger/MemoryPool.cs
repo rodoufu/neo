@@ -100,11 +100,11 @@ namespace Neo.Ledger
 
         public int UnVerifiedCount => _unverifiedTransactions.Count;
 
-        internal MemoryPool(BlockchainActor blockchainActor, LocalNodeActor localNodeActor, int capacity = 100)
+        internal MemoryPool(NeoContainer neoContainer, int capacity = 100)
         {
             Capacity = capacity;
-            this.blockchainActor = blockchainActor;
-            this.localNodeActor = localNodeActor;
+            this.blockchainActor = neoContainer.ResolveBlockchainActor();
+            this.localNodeActor = neoContainer.ResolveLocalNodeActor();
         }
 
         internal bool LoadPolicy(Snapshot snapshot)
