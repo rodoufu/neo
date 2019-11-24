@@ -60,7 +60,15 @@ namespace Neo.UnitTests
                             {
                                 c.TestInit.Invoke(instance, emptyObjArray);
                             }
-                            m.Invoke(instance, emptyObjArray);
+
+                            try
+                            {
+                                m.Invoke(instance, emptyObjArray);
+                            }
+                            catch
+                            {
+                                System.Console.WriteLine("oi");
+                            }
                             if (c.TestCleanup != null)
                             {
                                 c.TestCleanup.Invoke(instance, emptyObjArray);

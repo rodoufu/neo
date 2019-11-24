@@ -90,12 +90,14 @@ namespace Neo.Ledger
             }
         }
 
-        internal Blockchain(NeoContainer neoContainer, MemoryPool memoryPool, Store store)
+        public Blockchain(/*NeoContainer neoContainer, MemoryPool memoryPool, Store store*/)
         {
-            this.localNodeActor = neoContainer.ResolveLocalNodeActor();
-            this.consensusServiceActor = neoContainer.ResolveConsensusServiceActor();
-            this.taskManagerActor = neoContainer.ResolveTaskManagerActor();
+            // todo rodoufu fix this
+//            this.localNodeActor = neoContainer.ResolveLocalNodeActor();
+//            this.consensusServiceActor = neoContainer.ResolveConsensusServiceActor();
+//            this.taskManagerActor = neoContainer.ResolveTaskManagerActor();
 
+/*
             MemPool = memoryPool;
             MemPool.Capacity = ProtocolSettings.Default.MemoryPoolMaxTransactions;
             this.Store = store;
@@ -130,6 +132,7 @@ namespace Neo.Ledger
                     MemPool.LoadPolicy(currentSnapshot);
                 }
             }
+            */
         }
 
         public bool ContainsBlock(UInt256 hash)

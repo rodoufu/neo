@@ -25,8 +25,7 @@ namespace Neo.Ledger
         // These two are not expected to be hit, they are just safegaurds.
         private static readonly double MaxMillisecondsToReverifyTxPerIdle = (double)Blockchain.MillisecondsPerBlock / 15;
 
-        private readonly BlockchainActor blockchainActor;
-        private readonly LocalNodeActor localNodeActor;
+        private readonly NeoContainer container;
 
         //
         /// <summary>
@@ -102,9 +101,8 @@ namespace Neo.Ledger
 
         internal MemoryPool(NeoContainer neoContainer, int capacity = 100)
         {
+            this.container = neoContainer;
             Capacity = capacity;
-            this.blockchainActor = neoContainer.ResolveBlockchainActor();
-            this.localNodeActor = neoContainer.ResolveLocalNodeActor();
         }
 
         internal bool LoadPolicy(Snapshot snapshot)
@@ -378,7 +376,9 @@ namespace Neo.Ledger
                     _unverifiedSortedTransactions.Clear();
 
                     if (tx.Count > 0)
-                        blockchainActor.Tell(tx.ToArray(), ActorRefs.NoSender);
+                    {
+                        container.BlockchainActor.Tell(tx.ToArray(), ActorRefs.NoSender);
+                    }
                 }
             }
             finally
@@ -447,7 +447,10 @@ namespace Neo.Ledger
 
                         if (item.LastBroadcastTimestamp < rebroadcastCutOffTime)
                         {
-                            localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = item.Tx }, blockchainActor);
+                            container.ResolveLocalNodeActor().Tell(
+                                new LocalNode.RelayDirectly { Inventory = item.Tx },
+                                container.BlockchainActor
+                            );
                             item.LastBroadcastTimestamp = DateTime.UtcNow;
                         }
                     }

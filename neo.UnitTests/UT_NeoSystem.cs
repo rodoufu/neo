@@ -1,50 +1,58 @@
+using Akka.Actor;
+using Autofac;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neo.Persistence;
 using NSubstitute;
 using FluentAssertions;
+using Neo.Ledger;
+using Neo.Network.P2P;
 
 namespace Neo.UnitTests
 {
     [TestClass]
     public class UT_NeoSystem
     {
+        private Store store;
         private NeoSystem neoSystem;
+        private NeoContainer container;
 
         [TestInitialize]
         public void Setup()
         {
-            var store = Substitute.For<Store>();
-            // TODO FIXME this tests
-//            neoSystem = new NeoSystem(store);
-            neoSystem = TestBlockchain.InitializeMockNeoSystem();
+            store = Substitute.For<Store>();
+            container = new NeoContainer();
+//            container.Builder.RegisterInstance(store).As<Store>();
+
+//            neoSystem = container.ResolveNeoSystem(store);
         }
-
-//        [TestMethod]
-//        public void TestGetBlockchain() => neoSystem.Blockchain.Should().NotBeNull();
-
-//        [TestMethod]
-//        public void TestGetLocalNode() => neoSystem.LocalNode.Should().NotBeNull();
-
-//        [TestMethod]
-//        public void TestGetTaskManager() => neoSystem.TaskManager.Should().NotBeNull();
-
-        [TestMethod]
-        public void TestGetConsensus() => neoSystem.Consensus.Should().BeNull();
-
-        [TestMethod]
-        public void TestGetRpcServer() => neoSystem.RpcServer.Should().BeNull();
 
         [TestMethod]
         public void Creating()
         {
-            Assert.IsNotNull(neoSystem);
-            Assert.IsNotNull(neoSystem.ActorSystem);
-            // TODO FIXME this tests
-//            Assert.IsNotNull(neoSystem.Blockchain);
-//            Assert.IsNotNull(neoSystem.LocalNode);
+            var memoryPool = container.ResolveMemoryPool();
+//            container.ResolveBlockchain(null, null);
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.BlockchainActor);
+//            Assert.IsNotNull(container.Blockchain);
+//            Assert.IsNotNull(neoSystem);
+//            Assert.IsNotNull(neoSystem.ActorSystem);
+//            Assert.IsNotNull(container.Blockchain);
+//            Assert.IsNotNull(container.ResolveLocalNode());
 
-            // TODO FIXME this tests
-//            neoSystem.Blockchain.Tell("oi", neoSystem.LocalNode);
+//            container.ResolveBlockchainActor().Tell("oi", container.ResolveLocalNodeActor());
         }
+
+////        [TestMethod]
+////        public void TestGetBlockchain() => container.Blockchain.Should().NotBeNull();
+//
+//        [TestMethod]
+//        public void TestGetLocalNode() => container.ResolveLocalNode().Should().NotBeNull();
+//
+//        [TestMethod]
+//        public void TestGetConsensus() => neoSystem.Consensus.Should().BeNull();
+//
+//        [TestMethod]
+//        public void TestGetRpcServer() => neoSystem.RpcServer.Should().BeNull();
     }
 }

@@ -45,8 +45,8 @@ namespace Neo.UnitTests.Ledger
         {
             system = TestBlockchain.InitializeMockNeoSystem();
             store = TestBlockchain.GetStore();
-            NeoContainer.Instance.ResolveBlockchain(NeoContainer.Instance.ResolveMemoryPool(), store)
-                .MemPool.TryAdd(txSample.Hash, txSample);
+//            NeoContainer.Instance.ResolveBlockchain(NeoContainer.Instance.ResolveMemoryPool(), store)
+//                .MemPool.TryAdd(txSample.Hash, txSample);
         }
 
         [TestMethod]
