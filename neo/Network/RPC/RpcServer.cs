@@ -73,17 +73,17 @@ namespace Neo.Network.RPC
 
         private IWebHost host;
         private readonly Blockchain blockchain;
-        private readonly BlockchainActor blockchainActor;
+        private readonly BlockchainActorRef _blockchainActorRef;
         private readonly LocalNode localNode;
 
-        internal RpcServer(Blockchain blockchain, BlockchainActor blockchainActor, LocalNode localNode,
+        internal RpcServer(Blockchain blockchain, BlockchainActorRef blockchainActorRef, LocalNode localNode,
             Wallet wallet = null, long maxGasInvoke = default)
         {
             Wallet = wallet;
             MaxGasInvoke = maxGasInvoke;
             this.blockchain = blockchain;
             this.localNode = localNode;
-            this.blockchainActor = blockchainActor;
+            this._blockchainActorRef = blockchainActorRef;
         }
 
         private static JObject CreateErrorResponse(JObject id, int code, string message, JObject data = null)
@@ -658,13 +658,13 @@ namespace Neo.Network.RPC
 
         private JObject SendRawTransaction(Transaction tx)
         {
-            RelayResultReason reason = blockchainActor.Ask<RelayResultReason>(tx).Result;
+            RelayResultReason reason = _blockchainActorRef.Ask<RelayResultReason>(tx).Result;
             return GetRelayResult(reason, tx.Hash);
         }
 
         private JObject SubmitBlock(Block block)
         {
-            RelayResultReason reason = blockchainActor.Ask<RelayResultReason>(block).Result;
+            RelayResultReason reason = _blockchainActorRef.Ask<RelayResultReason>(block).Result;
             return GetRelayResult(reason, block.Hash);
         }
 

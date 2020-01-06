@@ -29,21 +29,7 @@ namespace Neo
         /// <summary>
         /// Should be used only after the NeoContainer is created.
         /// </summary>
-        public Blockchain Blockchain
-        {
-            get
-            {
-                if (_blockchain != null)
-                {
-                    return _blockchain;
-                }
-                else
-                {
-                    throw new InvalidOperationException("The blockchain object is not available yet, " +
-                        "you should consider using de actor directly, using a tell/ask method");
-                }
-            }
-        }
+        public Blockchain Blockchain => Container.Resolve<Blockchain>();
 
         private IContainer _container;
 
@@ -69,7 +55,7 @@ namespace Neo
             Builder.RegisterInstance(this).SingleInstance().OnActivated(h => Instance = h.Instance).As<NeoContainer>();
             Builder.Register(c => ActorSystem.Create(nameof(NeoSystem),
                 $"akka {{ log-dead-letters = off }}" +
-                $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
+                $"blockchain-mailbox {{ mailbox-type: \"{typeof(Blockchain.BlockchainMailbox).AssemblyQualifiedName}\" }}" +
                 $"task-manager-mailbox {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
                 $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
                 $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
@@ -86,21 +72,19 @@ namespace Neo
             )).As<MemoryPool>();
 
             // Blockchain
-//            Builder.Register((c, p) => new Blockchain(
-//                c.Resolve<NeoContainer>(),
-//                p.Named<MemoryPool>("memoryPool"),
-//                p.Named<Store>("store")
-//            )).SingleInstance().As<Blockchain>();
-//            Builder.RegisterType<Blockchain>().AsSelf();
+            Builder.Register((c, p) => new Blockchain(
+                c.Resolve<NeoContainer>(),
+                p.Named<MemoryPool>("memoryPool"),
+                p.Named<Store>("store")
+            )).SingleInstance().As<Blockchain>();
             Builder.Register((c, p) =>
             {
-                return c.Resolve<ActorSystem>().ActorOf(
-                    Props.Create(() => ResolveBlockchain(null, null
-//                    p.Named<MemoryPool>("memoryPool"),
-//                    p.Named<Store>("store")
-                    )).WithMailbox("blockchain-mailbox")
+                var actorSystem = c.Resolve<ActorSystem>();
+                return actorSystem.ActorOf(
+                    actorSystem.DI().Props<Blockchain.BlockchainActor>().WithMailbox("blockchain-mailbox")
                 );
-            }).SingleInstance().Named<IActorRef>(typeof(Blockchain).Name);
+            }).SingleInstance().Named<IActorRef>(typeof(Blockchain.BlockchainActor).Name);
+//            Register<LocalNode, LocalNodeActor>(Builder, string.Empty, true);
 
             // LocalNode
 //            Builder.RegisterType<LocalNode>().SingleInstance().AsSelf();
@@ -191,9 +175,9 @@ namespace Neo
                 new NamedParameter("maxGasInvoke", maxGasInvoke)
             );
 
-        private Blockchain ResolveBlockchain(MemoryPool memoryPool, Store store) => new Blockchain(
-//            Container.Resolve<NeoContainer>(),
-//            memoryPool, store
+        public Blockchain ResolveBlockchain(MemoryPool memoryPool, Store store) => Container.Resolve<Blockchain>(
+            new NamedParameter("memoryPool", memoryPool),
+            new NamedParameter("store", store)
         );
 
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>

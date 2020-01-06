@@ -22,15 +22,15 @@ namespace Neo
 
         private readonly Store store;
         private readonly LocalNodeActor localNodeActor;
-        private readonly BlockchainActor blockchainActor;
+        private readonly BlockchainActorRef _blockchainActorRef;
         private ChannelsConfig start_message = null;
         private bool suspend = false;
 
         internal NeoSystem(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
-            RpcServer rpcServer, BlockchainActor blockchainActor, Store store)
+            RpcServer rpcServer, BlockchainActorRef blockchainActorRef, Store store)
         {
             this.localNodeActor = localNodeActor;
-            this.blockchainActor = blockchainActor;
+            this._blockchainActorRef = blockchainActorRef;
             RpcServer = rpcServer;
             Consensus = consensusServiceActor;
             this.store = store;
@@ -69,7 +69,7 @@ namespace Neo
 
         public void StartConsensus(Wallet wallet, Store consensus_store = null, bool ignoreRecoveryLogs = false)
         {
-            Consensus.Tell(new ConsensusService.Start { IgnoreRecoveryLogs = ignoreRecoveryLogs }, blockchainActor);
+            Consensus.Tell(new ConsensusService.Start { IgnoreRecoveryLogs = ignoreRecoveryLogs }, _blockchainActorRef);
         }
 
         public void StartNode(ChannelsConfig config)

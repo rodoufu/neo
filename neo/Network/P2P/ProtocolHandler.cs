@@ -26,16 +26,16 @@ namespace Neo.Network.P2P
         private readonly LocalNodeActor localNodeActor;
         private readonly LocalNode localNode;
         private readonly Blockchain blockchain;
-        private readonly BlockchainActor blockchainActor;
+        private readonly BlockchainActorRef _blockchainActorRef;
         private VersionPayload version;
         private bool verack = false;
         private BloomFilter bloom_filter;
 
         public ProtocolHandler(TaskManagerActor taskManagerActor, LocalNodeActor localNodeActor,
-            Blockchain blockchain, BlockchainActor blockchainActor, LocalNode localNode)
+            Blockchain blockchain, BlockchainActorRef blockchainActorRef, LocalNode localNode)
         {
             this.blockchain = blockchain;
-            this.blockchainActor = blockchainActor;
+            this._blockchainActorRef = blockchainActorRef;
             this.taskManagerActor = taskManagerActor;
             this.localNodeActor = localNodeActor;
             this.localNode = localNode;
@@ -266,7 +266,7 @@ namespace Neo.Network.P2P
         private void OnHeadersMessageReceived(HeadersPayload payload)
         {
             if (payload.Headers.Length == 0) return;
-            blockchainActor.Tell(payload.Headers, Context.Parent);
+            _blockchainActorRef.Tell(payload.Headers, Context.Parent);
         }
 
         private void OnInventoryReceived(IInventory inventory)

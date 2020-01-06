@@ -45,7 +45,7 @@ namespace Neo.Network.P2P
         public static readonly uint Nonce;
         public static string UserAgent { get; set; }
         private readonly ConsensusServiceActor consensusServiceActor;
-        private readonly BlockchainActor blockchainActor;
+        private readonly BlockchainActorRef _blockchainActorRef;
         private readonly NeoContainer neoContainer;
 
         static LocalNode()
@@ -56,11 +56,11 @@ namespace Neo.Network.P2P
                 $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
         }
 
-        public LocalNode(ConsensusServiceActor consensusServiceActor, BlockchainActor blockchainActor,
+        public LocalNode(ConsensusServiceActor consensusServiceActor, BlockchainActorRef blockchainActorRef,
             NeoContainer neoContainer)
         {
             this.consensusServiceActor = consensusServiceActor;
-            this.blockchainActor = blockchainActor;
+            this._blockchainActorRef = blockchainActorRef;
             this.neoContainer = neoContainer;
         }
 
@@ -169,7 +169,7 @@ namespace Neo.Network.P2P
         {
             if (inventory is Transaction transaction)
                 consensusServiceActor?.Tell(transaction);
-            blockchainActor.Tell(inventory);
+            _blockchainActorRef.Tell(inventory);
         }
 
         private void OnRelayDirectly(IInventory inventory)
