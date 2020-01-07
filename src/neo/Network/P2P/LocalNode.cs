@@ -16,14 +16,13 @@ using System.Threading.Tasks;
 
 namespace Neo.Network.P2P
 {
-    public class LocalNode : Peer
+    public partial class LocalNode : Peer
     {
         public class Relay { public IInventory Inventory; }
         internal class RelayDirectly { public IInventory Inventory; }
         internal class SendDirectly { public IInventory Inventory; }
 
         public const uint ProtocolVersion = 0;
-        private const int MaxCountFromSeedList = 5;
         private readonly IPEndPoint[] SeedList = new IPEndPoint[ProtocolSettings.Default.SeedList.Length];
 
         private static readonly object lockObj = new object();
@@ -35,8 +34,6 @@ namespace Neo.Network.P2P
         public int UnconnectedCount => UnconnectedPeers.Count;
         public static readonly uint Nonce;
         public static string UserAgent { get; set; }
-        private readonly IActorRef consensusServiceActor;
-        private readonly IActorRef _blockchainActorRef;
         private readonly NeoContainer neoContainer;
 
         static LocalNode()
@@ -49,8 +46,6 @@ namespace Neo.Network.P2P
 
         public LocalNode(NeoContainer neoContainer)
         {
-            this.consensusServiceActor = neoContainer.ConsensusServiceActor;
-            this._blockchainActorRef = neoContainer.BlockchainActor;
             this.neoContainer = neoContainer;
 
             // Start dns resolution in parallel
@@ -60,23 +55,6 @@ namespace Neo.Network.P2P
                 Task.Run(() => SeedList[index] = GetIpEndPoint(ProtocolSettings.Default.SeedList[index]));
             }
         }
-
-        /// <summary>
-        /// Packs a MessageCommand to a full Message with an optional ISerializable payload.
-        /// Forwards it to <see cref="BroadcastMessage(Message message)"/>.
-        /// </summary>
-        /// <param name="command">The message command to be packed.</param>
-        /// <param name="payload">Optional payload to be Serialized along the message.</param>
-        private void BroadcastMessage(MessageCommand command, ISerializable payload = null)
-        {
-            BroadcastMessage(Message.Create(command, payload));
-        }
-
-        /// <summary>
-        /// Broadcast a message to all connected nodes, namely <see cref="Connections"/>.
-        /// </summary>
-        /// <param name="message">The message to be broadcasted.</param>
-        private void BroadcastMessage(Message message) => SendToRemoteNodes(message);
 
         /// <summary>
         /// Send message to all the RemoteNodes connected to other nodes, faster than ActorSelection.
@@ -132,83 +110,6 @@ namespace Neo.Network.P2P
         {
             return UnconnectedPeers;
         }
-
-        /// <summary>
-        /// Override of abstract class that is triggered when <see cref="UnconnectedPeers"/> is empty.
-        /// Performs a BroadcastMessage with the command `MessageCommand.GetAddr`, which, eventually, tells all known connections.
-        /// If there are no connected peers it will try with the default, respecting MaxCountFromSeedList limit.
-        /// </summary>
-        /// <param name="count">The count of peers required</param>
-        protected override void NeedMorePeers(int count)
-        {
-            count = Math.Max(count, MaxCountFromSeedList);
-            if (ConnectedPeers.Count > 0)
-            {
-                BroadcastMessage(MessageCommand.GetAddr);
-            }
-            else
-            {
-                // Will call AddPeers with default SeedList set cached on <see cref="ProtocolSettings"/>.
-                // It will try to add those, sequentially, to the list of currently unconnected ones.
-
-                Random rand = new Random();
-                AddPeers(SeedList.Where(u => u != null).OrderBy(p => rand.Next()).Take(count));
-            }
-        }
-
-        protected override void OnReceive(object message)
-        {
-            base.OnReceive(message);
-            switch (message)
-            {
-                case Message msg:
-                    BroadcastMessage(msg);
-                    break;
-                case Relay relay:
-                    OnRelay(relay.Inventory);
-                    break;
-                case RelayDirectly relay:
-                    OnRelayDirectly(relay.Inventory);
-                    break;
-                case SendDirectly send:
-                    OnSendDirectly(send.Inventory);
-                    break;
-                case RelayResultReason _:
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// For Transaction type of IInventory, it will tell Transaction to the actor of Consensus.
-        /// Otherwise, tell the inventory to the actor of Blockchain.
-        /// There are, currently, three implementations of IInventory: TX, Block and ConsensusPayload.
-        /// </summary>
-        /// <param name="inventory">The inventory to be relayed.</param>
-        private void OnRelay(IInventory inventory)
-        {
-            if (inventory is Transaction transaction)
-                consensusServiceActor?.Tell(transaction);
-            _blockchainActorRef.Tell(inventory);
-        }
-
-        private void OnRelayDirectly(IInventory inventory)
-        {
-            var message = new RemoteNode.Relay { Inventory = inventory };
-            // When relaying a block, if the block's index is greater than 'LastBlockIndex' of the RemoteNode, relay the block;
-            // otherwise, don't relay.
-            if (inventory is Block block)
-            {
-                foreach (KeyValuePair<IActorRef, RemoteNode> kvp in RemoteNodes)
-                {
-                    if (block.Index > kvp.Value.LastBlockIndex)
-                        kvp.Key.Tell(message);
-                }
-            }
-            else
-                SendToRemoteNodes(message);
-        }
-
-        private void OnSendDirectly(IInventory inventory) => SendToRemoteNodes(inventory);
 
         protected override Props ProtocolProps(object connection, IPEndPoint remote, IPEndPoint local) =>
             neoContainer.ResolveNodeProps(connection, remote, local);

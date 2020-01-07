@@ -78,11 +78,12 @@ namespace Neo
                 );
             }).SingleInstance().Named<IActorRef>(typeof(Blockchain.BlockchainActor).Name);
 
+            Builder.RegisterType<LocalNode>().SingleInstance();
             Builder.Register((c, p) =>
             {
                 var actorSystem = c.Resolve<ActorSystem>();
                 return actorSystem.ActorOf(
-                    actorSystem.DI().Props<LocalNode>()
+                    actorSystem.DI().Props<LocalNode.LocalNodeActor>()
                 );
             }).SingleInstance().Named<IActorRef>(typeof(LocalNode).Name);
 
@@ -181,6 +182,8 @@ namespace Neo
 
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
             Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
+
+        public LocalNode LocalNode => Container.Resolve<LocalNode>();
 
         public IActorRef LocalNodeActor => Container.ResolveNamed<IActorRef>(typeof(LocalNode).Name);
 

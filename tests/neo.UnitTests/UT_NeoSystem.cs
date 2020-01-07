@@ -36,10 +36,13 @@ namespace Neo.UnitTests
             var blockchain = container.Container.Resolve<Blockchain>();
             Assert.IsNotNull(blockchain);
 
-            var taskManager = container.TaskManagerActor;
-            Assert.IsNotNull(taskManager);
+            var taskManagerActor = container.TaskManagerActor;
+            Assert.IsNotNull(taskManagerActor);
 
-            var localNode = container.LocalNodeActor;
+            var localNodeActor = container.LocalNodeActor;
+            Assert.IsNotNull(localNodeActor);
+
+            var localNode = container.LocalNode;
             Assert.IsNotNull(localNode);
 //            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
 //            Assert.IsNotNull(container.BlockchainActor);
