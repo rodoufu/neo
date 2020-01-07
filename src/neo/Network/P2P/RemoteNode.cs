@@ -21,7 +21,7 @@ namespace Neo.Network.P2P
         private readonly IActorRef protocol;
         private readonly Queue<Message> message_queue_high = new Queue<Message>();
         private readonly Queue<Message> message_queue_low = new Queue<Message>();
-        private readonly TaskManagerActor taskManagerActor;
+        private readonly IActorRef taskManagerActor;
         private ByteString msg_buffer = ByteString.Empty;
         private BloomFilter bloom_filter;
         private bool ack = true;
@@ -34,13 +34,13 @@ namespace Neo.Network.P2P
         public bool IsFullNode { get; private set; } = false;
 
         public RemoteNode(ProtocolHandlerProps protocolHandlerProps, object connection, IPEndPoint remote, IPEndPoint local,
-            LocalNode localNode, Blockchain blockchain, TaskManagerActor taskManagerActor)
+            LocalNode localNode, Blockchain blockchain, NeoContainer neoContainer)
             : base(connection, remote, local)
         {
             this.localNode = localNode;
             this.protocol = protocolHandlerProps;
             localNode.RemoteNodes.TryAdd(Self, this);
-            this.taskManagerActor = taskManagerActor;
+            this.taskManagerActor = neoContainer.TaskManagerActor;
 
             var capabilities = new List<NodeCapability>
             {

@@ -33,11 +33,11 @@ namespace Neo.Network.P2P
         private readonly PendingKnownHashesCollection pendingKnownHashes;
         private readonly FIFOSet<UInt256> knownHashes;
         private readonly FIFOSet<UInt256> sentHashes;
-        private readonly TaskManagerActor taskManagerActor;
-        private readonly LocalNodeActor localNodeActor;
+        private readonly IActorRef taskManagerActor;
+        private readonly IActorRef localNodeActor;
         private readonly LocalNode localNode;
         private readonly Blockchain blockchain;
-        private readonly BlockchainActorRef _blockchainActorRef;
+        private readonly IActorRef _blockchainActorRef;
         private VersionPayload version;
         private bool verack = false;
         private BloomFilter bloom_filter;
@@ -47,13 +47,12 @@ namespace Neo.Network.P2P
 
         private readonly ICancelable timer = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimerInterval, TimerInterval, Context.Self, new Timer(), ActorRefs.NoSender);
 
-        public ProtocolHandler(TaskManagerActor taskManagerActor, LocalNodeActor localNodeActor,
-            Blockchain blockchain, BlockchainActorRef blockchainActorRef, LocalNode localNode)
+        public ProtocolHandler(NeoContainer neoContainer, Blockchain blockchain, LocalNode localNode)
         {
             this.blockchain = blockchain;
-            this._blockchainActorRef = blockchainActorRef;
-            this.taskManagerActor = taskManagerActor;
-            this.localNodeActor = localNodeActor;
+            this._blockchainActorRef = neoContainer.BlockchainActor;
+            this.taskManagerActor = neoContainer.TaskManagerActor;
+            this.localNodeActor = neoContainer.LocalNodeActor;
             this.localNode = localNode;
 
             this.pendingKnownHashes = new PendingKnownHashesCollection();

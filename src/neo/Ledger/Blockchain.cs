@@ -65,9 +65,9 @@ namespace Neo.Ledger
         private uint stored_header_count = 0;
         private readonly Dictionary<UInt256, Block> block_cache = new Dictionary<UInt256, Block>();
         private readonly Dictionary<uint, LinkedList<Block>> block_cache_unverified = new Dictionary<uint, LinkedList<Block>>();
-        private readonly ConsensusServiceActor consensusServiceActor;
-        private readonly LocalNodeActor localNodeActor;
-        private readonly TaskManagerActor taskManagerActor;
+        private readonly IActorRef consensusServiceActor;
+        private readonly IActorRef localNodeActor;
+        private readonly IActorRef taskManagerActor;
         internal readonly RelayCache ConsensusRelayCache = new RelayCache(100);
         private SnapshotView currentSnapshot;
 
@@ -96,9 +96,10 @@ namespace Neo.Ledger
         public Blockchain(NeoContainer neoContainer, MemoryPool memoryPool, IStore store)
         {
             // TODO rodoufu fix this
-//            this.localNodeActor = neoContainer.ResolveLocalNodeActor();
-//            this.consensusServiceActor = neoContainer.ResolveConsensusServiceActor();
-//            this.taskManagerActor = neoContainer.ResolveTaskManagerActor();
+            this.localNodeActor = neoContainer.LocalNodeActor;
+//            this.consensusServiceActor = neoContainer.ConsensusServiceActor;
+            this.taskManagerActor = neoContainer.TaskManagerActor;
+
             /*
             this.system = system;
             this.MemPool = new MemoryPool(system, ProtocolSettings.Default.MemoryPoolMaxTransactions);

@@ -23,14 +23,6 @@ namespace Neo
         /// </summary>
         public static NeoContainer Instance { get; private set; }
 
-
-        private Blockchain _blockchain;
-
-        /// <summary>
-        /// Should be used only after the NeoContainer is created.
-        /// </summary>
-        public Blockchain Blockchain => Container.Resolve<Blockchain>();
-
         private IContainer _container;
 
         /// <summary>
@@ -53,6 +45,7 @@ namespace Neo
             Builder = new ContainerBuilder();
 
             Builder.RegisterInstance(this).SingleInstance().OnActivated(h => Instance = h.Instance).As<NeoContainer>();
+
             Builder.Register(c => ActorSystem.Create(nameof(NeoSystem),
                 $"akka {{ log-dead-letters = off }}" +
                 $"blockchain-mailbox {{ mailbox-type: \"{typeof(Blockchain.BlockchainMailbox).AssemblyQualifiedName}\" }}" +
@@ -84,16 +77,23 @@ namespace Neo
                     actorSystem.DI().Props<Blockchain.BlockchainActor>().WithMailbox("blockchain-mailbox")
                 );
             }).SingleInstance().Named<IActorRef>(typeof(Blockchain.BlockchainActor).Name);
-//            Register<LocalNode, LocalNodeActor>(Builder, string.Empty, true);
 
-            // LocalNode
-//            Builder.RegisterType<LocalNode>().SingleInstance().AsSelf();
-//            Register<LocalNode, LocalNodeActor>(Builder, string.Empty, true);
-//
-//            // TaskManager
-//            Builder.RegisterType<TaskManager>().AsSelf();
-//            Register<TaskManager, TaskManagerActor>(Builder, "task-manager-mailbox");
-//
+            Builder.Register((c, p) =>
+            {
+                var actorSystem = c.Resolve<ActorSystem>();
+                return actorSystem.ActorOf(
+                    actorSystem.DI().Props<LocalNode>()
+                );
+            }).SingleInstance().Named<IActorRef>(typeof(LocalNode).Name);
+
+            Builder.Register((c, p) =>
+            {
+                var actorSystem = c.Resolve<ActorSystem>();
+                return actorSystem.ActorOf(
+                    actorSystem.DI().Props<TaskManager>().WithMailbox("task-manager-mailbox")
+                );
+            }).SingleInstance().Named<IActorRef>(typeof(TaskManager).Name);
+
 //            // ConsensusService
 //            Builder.Register((c, p) => new ConsensusService(
 //                c.Resolve<LocalNodeActor>(),
@@ -157,6 +157,11 @@ namespace Neo
             registration.As<T2>();
         }
 
+        /// <summary>
+        /// Should be used only after the NeoContainer is created.
+        /// </summary>
+        public Blockchain Blockchain => Container.Resolve<Blockchain>();
+
         public RemoteNodeProps ResolveNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
         {
             var remoteNode = Container.Resolve<RemoteNode>();
@@ -177,9 +182,7 @@ namespace Neo
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
             Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
 
-        public LocalNodeActor ResolveLocalNodeActor() => Container.Resolve<LocalNodeActor>();
-
-        public LocalNode LocalNode => Container.Resolve<LocalNode>();
+        public IActorRef LocalNodeActor => Container.ResolveNamed<IActorRef>(typeof(LocalNode).Name);
 
         public ConsensusService ResolveConsensusService(IStore store, Wallet wallet) =>
             Container.Resolve<ConsensusService>(
@@ -187,9 +190,9 @@ namespace Neo
                 new NamedParameter("wallet", wallet)
             );
 
-        public ConsensusServiceActor ConsensusServiceActor => Container.Resolve<ConsensusServiceActor>();
+        public IActorRef ConsensusServiceActor => Container.ResolveNamed<IActorRef>(typeof(ConsensusService).Name);
 
-        public TaskManagerActor TaskManagerActor => Container.Resolve<TaskManagerActor>();
+        public IActorRef TaskManagerActor => Container.ResolveNamed<IActorRef>(typeof(TaskManager).Name);
 
         public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store) =>
             Container.ResolveNamed<IActorRef>(

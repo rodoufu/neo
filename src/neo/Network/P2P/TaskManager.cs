@@ -28,7 +28,7 @@ namespace Neo.Network.P2P
         private const int MaxConncurrentTasks = 3;
         private const int PingCoolingOffPeriod = 60; // in seconds.
         private const int MaxConcurrentTasks = 3;
-        private readonly LocalNodeActor localNode;
+        private readonly IActorRef localNode;
         private readonly Blockchain blockchain;
         /// <summary>
         /// A set of known hashes, of inventories or payloads, already received.
@@ -41,9 +41,9 @@ namespace Neo.Network.P2P
         private readonly UInt256 HeaderTaskHash = UInt256.Zero;
         private bool HasHeaderTask => globalTasks.ContainsKey(HeaderTaskHash);
 
-        public TaskManager(LocalNodeActor localNode, Blockchain blockchain)
+        public TaskManager(NeoContainer neoContainer, Blockchain blockchain)
         {
-            this.localNode = localNode;
+            this.localNode = neoContainer.LocalNodeActor;
             this.blockchain = blockchain;
             this.knownHashes = new FIFOSet<UInt256>(
                 this.blockchain.MemPool.Capacity * 2

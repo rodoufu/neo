@@ -447,7 +447,7 @@ namespace Neo.Ledger
 
                         if (item.LastBroadcastTimestamp < rebroadcastCutOffTime)
                         {
-                            container.ResolveLocalNodeActor().Tell(
+                            container.LocalNodeActor.Tell(
                                 new LocalNode.RelayDirectly { Inventory = item.Tx },
                                 container.BlockchainActor
                             );

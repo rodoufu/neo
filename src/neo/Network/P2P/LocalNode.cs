@@ -35,8 +35,8 @@ namespace Neo.Network.P2P
         public int UnconnectedCount => UnconnectedPeers.Count;
         public static readonly uint Nonce;
         public static string UserAgent { get; set; }
-        private readonly ConsensusServiceActor consensusServiceActor;
-        private readonly BlockchainActorRef _blockchainActorRef;
+        private readonly IActorRef consensusServiceActor;
+        private readonly IActorRef _blockchainActorRef;
         private readonly NeoContainer neoContainer;
 
         static LocalNode()
@@ -47,11 +47,10 @@ namespace Neo.Network.P2P
                 $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
         }
 
-        public LocalNode(ConsensusServiceActor consensusServiceActor, BlockchainActorRef blockchainActorRef,
-            NeoContainer neoContainer)
+        public LocalNode(NeoContainer neoContainer)
         {
-            this.consensusServiceActor = consensusServiceActor;
-            this._blockchainActorRef = blockchainActorRef;
+            this.consensusServiceActor = neoContainer.ConsensusServiceActor;
+            this._blockchainActorRef = neoContainer.BlockchainActor;
             this.neoContainer = neoContainer;
 
             // Start dns resolution in parallel

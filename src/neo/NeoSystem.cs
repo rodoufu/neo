@@ -16,21 +16,20 @@ namespace Neo
     public class NeoSystem : IDisposable
     {
         public ActorSystem ActorSystem { get; }
-        public ConsensusServiceActor Consensus { get; private set; }
+        public IActorRef Consensus { get; private set; }
 
         private readonly IStore store;
-        private readonly LocalNodeActor localNodeActor;
-        private readonly BlockchainActorRef _blockchainActorRef;
+        private readonly IActorRef localNodeActor;
+        private readonly IActorRef _blockchainActorRef;
         private ChannelsConfig start_message = null;
         private bool suspend = false;
 
-        internal NeoSystem(LocalNodeActor localNodeActor, ConsensusServiceActor consensusServiceActor,
-            BlockchainActorRef blockchainActorRef, IStore store)
+        internal NeoSystem(NeoContainer neoContainer, IStore store)
         {
             Plugin.LoadPlugins(this);
-            this.localNodeActor = localNodeActor;
-            this._blockchainActorRef = blockchainActorRef;
-            Consensus = consensusServiceActor;
+            this.localNodeActor = neoContainer.LocalNodeActor;
+            this._blockchainActorRef = neoContainer.BlockchainActor;
+            Consensus = neoContainer.ConsensusServiceActor;
             this.store = store;
             foreach (var plugin in Plugin.Plugins)
                 plugin.OnPluginsLoaded();

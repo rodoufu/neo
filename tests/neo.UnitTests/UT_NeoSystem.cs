@@ -30,11 +30,17 @@ namespace Neo.UnitTests
         public void Creating()
         {
             var memoryPool = container.ResolveMemoryPool();
-//            container.ResolveBlockchain(null, null);
             Assert.IsNotNull(memoryPool);
             Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
             var blockchain = container.Container.Resolve<Blockchain>();
             Assert.IsNotNull(blockchain);
+
+            var taskManager = container.TaskManagerActor;
+            Assert.IsNotNull(taskManager);
+
+            var localNode = container.LocalNodeActor;
+            Assert.IsNotNull(localNode);
 //            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
 //            Assert.IsNotNull(container.BlockchainActor);
 //            Assert.IsNotNull(container.Blockchain);
