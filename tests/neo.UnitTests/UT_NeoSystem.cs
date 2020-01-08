@@ -42,6 +42,7 @@ namespace Neo.UnitTests
             var localNodeActor = container.LocalNodeActor;
             Assert.IsNotNull(localNodeActor);
 
+            // Failing when creating LocalNode.
             var localNode = container.LocalNode;
             Assert.IsNotNull(localNode);
 //            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
