@@ -27,6 +27,70 @@ namespace Neo.UnitTests
         }
 
         [TestMethod]
+        public void CreatingActorSytem()
+        {
+            var actorSystem = container.Container.Resolve<ActorSystem>();
+            Assert.IsNotNull(actorSystem);
+        }
+
+        [TestMethod]
+        public void CreatingMemoryPool()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+        }
+
+        [TestMethod]
+        public void CreatingBlockchain()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var blockchain = container.Container.Resolve<Blockchain>();
+            Assert.IsNotNull(blockchain);
+
+            blockchain = container.Blockchain;
+            Assert.IsNotNull(blockchain);
+
+            var blockchainActor = container.BlockchainActor;
+            Assert.IsNotNull(blockchainActor);
+        }
+
+        [TestMethod]
+        public void CreatingTaskManager()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var taskManagerActor = container.TaskManagerActor;
+            Assert.IsNotNull(taskManagerActor);
+        }
+
+        [TestMethod]
+        public void CreatingLocalNode()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var localNode = container.LocalNode;
+            Assert.IsNotNull(localNode);
+        }
+
+        [TestMethod]
+        public void CreatingLocalNodeActor()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var localNodeActor = container.LocalNodeActor;
+            Assert.IsNotNull(localNodeActor);
+        }
+
+        [TestMethod]
         public void Creating()
         {
             var memoryPool = container.ResolveMemoryPool();
@@ -36,15 +100,24 @@ namespace Neo.UnitTests
             var blockchain = container.Container.Resolve<Blockchain>();
             Assert.IsNotNull(blockchain);
 
+            blockchain = container.Blockchain;
+            Assert.IsNotNull(blockchain);
+
+            var blockchainActor = container.BlockchainActor;
+            Assert.IsNotNull(blockchainActor);
+
+            /*
             var taskManagerActor = container.TaskManagerActor;
             Assert.IsNotNull(taskManagerActor);
 
-            var localNodeActor = container.LocalNodeActor;
-            Assert.IsNotNull(localNodeActor);
-
-            // Failing when creating LocalNode.
             var localNode = container.LocalNode;
             Assert.IsNotNull(localNode);
+
+            var localNodeActor = container.LocalNodeActor;
+            Assert.IsNotNull(localNodeActor);
+            */
+
+
 //            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
 //            Assert.IsNotNull(container.BlockchainActor);
 //            Assert.IsNotNull(container.Blockchain);

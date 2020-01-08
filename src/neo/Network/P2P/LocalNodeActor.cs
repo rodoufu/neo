@@ -26,11 +26,11 @@ namespace Neo.Network.P2P
             private readonly IActorRef blockchainActorRef;
             private readonly IActorRef consensusServiceActor;
 
-            public LocalNodeActor(NeoContainer neoContainer, LocalNode localNode) : base(localNode)
+            public LocalNodeActor(/*NeoContainer neoContainer, LocalNode localNode*/) : base(null/*localNode*/)
             {
-                this.blockchainActorRef = neoContainer.BlockchainActor;
-                this.consensusServiceActor = neoContainer.ConsensusServiceActor;
-                this.localNode = localNode;
+//                this.blockchainActorRef = neoContainer.BlockchainActor;
+//                this.consensusServiceActor = neoContainer.ConsensusServiceActor;
+//                this.localNode = localNode;
             }
 
             /// <summary>

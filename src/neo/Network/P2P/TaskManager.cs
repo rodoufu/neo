@@ -41,13 +41,15 @@ namespace Neo.Network.P2P
         private readonly UInt256 HeaderTaskHash = UInt256.Zero;
         private bool HasHeaderTask => globalTasks.ContainsKey(HeaderTaskHash);
 
-        public TaskManager(NeoContainer neoContainer, Blockchain blockchain)
+        public TaskManager(/*NeoContainer neoContainer, Blockchain blockchain*/)
         {
+            /*
             this.localNode = neoContainer.LocalNodeActor;
             this.blockchain = blockchain;
             this.knownHashes = new FIFOSet<UInt256>(
                 this.blockchain.MemPool.Capacity * 2
             );
+            */
         }
 
         private void OnHeaderTaskCompleted()

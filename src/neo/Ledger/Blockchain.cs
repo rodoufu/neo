@@ -96,15 +96,16 @@ namespace Neo.Ledger
         public Blockchain(NeoContainer neoContainer, MemoryPool memoryPool, IStore store)
         {
             // TODO rodoufu fix this
-            this.localNodeActor = neoContainer.LocalNodeActor;
+//            this.localNodeActor = neoContainer.LocalNodeActor;
 //            this.consensusServiceActor = neoContainer.ConsensusServiceActor;
-            this.taskManagerActor = neoContainer.TaskManagerActor;
-
-            /*
-            this.system = system;
-            this.MemPool = new MemoryPool(system, ProtocolSettings.Default.MemoryPoolMaxTransactions);
+//            this.taskManagerActor = neoContainer.TaskManagerActor;
+            this.MemPool = memoryPool;
             this.Store = store;
             this.View = new ReadOnlyView(store);
+
+            /*
+//            this.system = system;
+//            this.MemPool = new MemoryPool(system, ProtocolSettings.Default.MemoryPoolMaxTransactions);
             lock (lockObj)
             {
                 if (singleton != null)
@@ -277,7 +278,7 @@ namespace Neo.Ledger
             }
         }
 
-        private void UpdateCurrentSnapshot()
+        internal void UpdateCurrentSnapshot()
         {
             Interlocked.Exchange(ref currentSnapshot, GetSnapshot())?.Dispose();
         }
