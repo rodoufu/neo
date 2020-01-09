@@ -22,9 +22,6 @@ namespace Neo.UnitTests
         {
             store = Substitute.For<IStore>();
             container = new NeoContainer();
-//            container.Builder.RegisterInstance(store).As<Store>();
-
-//            neoSystem = container.ResolveNeoSystem(store);
         }
 
         [TestMethod]
@@ -142,17 +139,5 @@ namespace Neo.UnitTests
 
 //            container.ResolveBlockchainActor().Tell("oi", container.ResolveLocalNodeActor());
         }
-
-////        [TestMethod]
-////        public void TestGetBlockchain() => container.Blockchain.Should().NotBeNull();
-//
-//        [TestMethod]
-//        public void TestGetLocalNode() => container.ResolveLocalNode().Should().NotBeNull();
-//
-//        [TestMethod]
-//        public void TestGetConsensus() => neoSystem.Consensus.Should().BeNull();
-//
-//        [TestMethod]
-//        public void TestGetRpcServer() => neoSystem.RpcServer.Should().BeNull();
     }
 }

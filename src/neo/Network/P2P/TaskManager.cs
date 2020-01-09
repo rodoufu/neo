@@ -26,15 +26,12 @@ namespace Neo.Network.P2P
         private static readonly TimeSpan TaskTimeout = TimeSpan.FromMinutes(1);
 
         private const int MaxConncurrentTasks = 3;
-        private const int PingCoolingOffPeriod = 60; // in seconds.
-        private const int MaxConcurrentTasks = 3;
-        private IActorRef localNode => neoContainer.LocalNodeActor;
-        private Blockchain blockchain => neoContainer.Blockchain;
-        private readonly NeoContainer neoContainer;
+        private const int PingCoolingOffPeriod = 60; // in secconds
+
         /// <summary>
         /// A set of known hashes, of inventories or payloads, already received.
         /// </summary>
-        private readonly FIFOSet<UInt256> knownHashes;
+        private readonly HashSetCache<UInt256> knownHashes;
         private readonly Dictionary<UInt256, int> globalTasks = new Dictionary<UInt256, int>();
         private readonly Dictionary<IActorRef, TaskSession> sessions = new Dictionary<IActorRef, TaskSession>();
         private readonly ICancelable timer = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimerInterval, TimerInterval, Context.Self, new Timer(), ActorRefs.NoSender);
@@ -42,15 +39,14 @@ namespace Neo.Network.P2P
         private readonly UInt256 HeaderTaskHash = UInt256.Zero;
         private bool HasHeaderTask => globalTasks.ContainsKey(HeaderTaskHash);
 
-        public TaskManager(/*NeoContainer neoContainer*/)
+        private readonly NeoContainer neoContainer;
+        private IActorRef localNode => neoContainer.LocalNodeActor;
+        private Blockchain blockchain => neoContainer.Blockchain;
+
+        public TaskManager(NeoContainer neoContainer)
         {
-            /*
-            this.localNode = neoContainer.LocalNodeActor;
-            this.blockchain = blockchain;
-            this.knownHashes = new FIFOSet<UInt256>(
-                this.blockchain.MemPool.Capacity * 2
-            );
-            */
+            this.neoContainer = neoContainer;
+            this.knownHashes = new HashSetCache<UInt256>(blockchain.MemPool.Capacity * 2 / 5);
         }
 
         private void OnHeaderTaskCompleted()
@@ -221,6 +217,11 @@ namespace Neo.Network.P2P
             timer.CancelIfNotNull();
             base.PostStop();
         }
+
+//        public static Props Props(NeoSystem system)
+//        {
+//            return Akka.Actor.Props.Create(() => new TaskManager(system)).WithMailbox("task-manager-mailbox");
+//        }
 
         private void RequestTasks(TaskSession session)
         {

@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Configuration;
 using Akka.DI.Core;
 using Neo.Cryptography;
+using Neo.IO;
 using Neo.IO.Actors;
 using Neo.IO.Caching;
 using Neo.Ledger;
@@ -31,33 +32,30 @@ namespace Neo.Network.P2P
         }
 
         private readonly PendingKnownHashesCollection pendingKnownHashes;
-        private readonly FIFOSet<UInt256> knownHashes;
-        private readonly FIFOSet<UInt256> sentHashes;
-        private readonly IActorRef taskManagerActor;
-        private readonly IActorRef localNodeActor;
-        private readonly LocalNode localNode;
-        private readonly Blockchain blockchain;
-        private readonly IActorRef _blockchainActorRef;
+        private readonly HashSetCache<UInt256> knownHashes;
+        private readonly HashSetCache<UInt256> sentHashes;
+        private readonly NeoContainer neoContainer;
         private VersionPayload version;
         private bool verack = false;
         private BloomFilter bloom_filter;
+
+        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
+        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
+        private LocalNode localNode => neoContainer.LocalNode;
+        private Blockchain blockchain => neoContainer.Blockchain;
+        private IActorRef blockchainActor => neoContainer.BlockchainActor;
 
         private static readonly TimeSpan TimerInterval = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan PendingTimeout = TimeSpan.FromMinutes(1);
 
         private readonly ICancelable timer = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimerInterval, TimerInterval, Context.Self, new Timer(), ActorRefs.NoSender);
 
-        public ProtocolHandler(NeoContainer neoContainer, Blockchain blockchain, LocalNode localNode)
+        public ProtocolHandler(NeoContainer neoContainer)
         {
-            this.blockchain = blockchain;
-            this._blockchainActorRef = neoContainer.BlockchainActor;
-            this.taskManagerActor = neoContainer.TaskManagerActor;
-            this.localNodeActor = neoContainer.LocalNodeActor;
-            this.localNode = localNode;
-
+            this.neoContainer = neoContainer;
             this.pendingKnownHashes = new PendingKnownHashesCollection();
-            this.knownHashes = new FIFOSet<UInt256>(blockchain.MemPool.Capacity * 2);
-            this.sentHashes = new FIFOSet<UInt256>(blockchain.MemPool.Capacity * 2);
+            this.knownHashes = new HashSetCache<UInt256>(blockchain.MemPool.Capacity * 2 / 5);
+            this.sentHashes = new HashSetCache<UInt256>(blockchain.MemPool.Capacity * 2 / 5);
         }
 
         protected override void OnReceive(object message)
@@ -319,7 +317,7 @@ namespace Neo.Network.P2P
         private void OnHeadersMessageReceived(HeadersPayload payload)
         {
             if (payload.Headers.Length == 0) return;
-            _blockchainActorRef.Tell(payload.Headers, Context.Parent);
+            blockchainActor.Tell(payload.Headers, Context.Parent);
         }
 
         private void OnInventoryReceived(IInventory inventory)

@@ -116,7 +116,6 @@ namespace Neo
                     actorSystem.DI().Props<ConsensusService.ConsensusServiceActor>().WithMailbox("consensus-service-mailbox")
                 );
             }).SingleInstance().Named<IActorRef>(typeof(ConsensusService).Name);
-//            Register<ConsensusService, ConsensusServiceActor>(Builder, "consensus-service-mailbox");
 //
 //            // ProtocolHandler
 //            Builder.RegisterType<ProtocolHandler>().AsSelf();

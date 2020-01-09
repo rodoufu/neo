@@ -22,15 +22,14 @@ namespace Neo.Network.P2P
         {
             private const int MaxCountFromSeedList = 5;
 
-            private readonly LocalNode localNode;
-            private readonly IActorRef blockchainActorRef;
-            private readonly IActorRef consensusServiceActor;
+            private readonly NeoContainer neoContainer;
+            private LocalNode localNode => neoContainer.LocalNode;
+            private IActorRef blockchainActor => neoContainer.BlockchainActor;
+            private IActorRef consensusServiceActor => neoContainer.ConsensusServiceActor;
 
-            public LocalNodeActor(/*NeoContainer neoContainer, LocalNode localNode*/) : base(null/*localNode*/)
+            public LocalNodeActor(NeoContainer neoContainer) : base(neoContainer.LocalNode)
             {
-//                this.blockchainActorRef = neoContainer.BlockchainActor;
-//                this.consensusServiceActor = neoContainer.ConsensusServiceActor;
-//                this.localNode = localNode;
+                this.neoContainer = neoContainer;
             }
 
             /// <summary>
@@ -105,7 +104,7 @@ namespace Neo.Network.P2P
             {
                 if (inventory is Transaction transaction)
                     consensusServiceActor?.Tell(transaction);
-                blockchainActorRef.Tell(inventory);
+                blockchainActor.Tell(inventory);
             }
 
             private void OnRelayDirectly(IInventory inventory)

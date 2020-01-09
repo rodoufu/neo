@@ -98,7 +98,6 @@ namespace Neo.Ledger
 
         public Blockchain(NeoContainer neoContainer, MemoryPool memoryPool, IStore store)
         {
-            // TODO rodoufu fix this
             this.neoContainer = neoContainer;
             this.MemPool = memoryPool;
             this.Store = store;

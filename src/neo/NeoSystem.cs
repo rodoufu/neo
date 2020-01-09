@@ -1,35 +1,30 @@
 using Akka.Actor;
 using Neo.Consensus;
-using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Persistence;
 using Neo.Plugins;
 using Neo.Wallets;
 using System;
-using System.Net;
-using Akka.DI.AutoFac;
-using Autofac;
-using SQLitePCL;
 
 namespace Neo
 {
     public class NeoSystem : IDisposable
     {
         public ActorSystem ActorSystem { get; }
-        public IActorRef Consensus { get; private set; }
 
+        private readonly NeoContainer neoContainer;
         private readonly IStore store;
-        private readonly IActorRef localNodeActor;
-        private readonly IActorRef _blockchainActorRef;
         private ChannelsConfig start_message = null;
         private bool suspend = false;
 
+        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
+        private IActorRef blockchainActor => neoContainer.BlockchainActor;
+        private IActorRef Consensus => neoContainer.ConsensusServiceActor;
+
         internal NeoSystem(NeoContainer neoContainer, IStore store)
         {
+            this.neoContainer = neoContainer;
             Plugin.LoadPlugins(this);
-            this.localNodeActor = neoContainer.LocalNodeActor;
-            this._blockchainActorRef = neoContainer.BlockchainActor;
-            Consensus = neoContainer.ConsensusServiceActor;
             this.store = store;
             foreach (var plugin in Plugin.Plugins)
                 plugin.OnPluginsLoaded();
@@ -66,7 +61,7 @@ namespace Neo
 
         public void StartConsensus(Wallet wallet, IStore consensus_store = null, bool ignoreRecoveryLogs = false)
         {
-            Consensus.Tell(new ConsensusService.Start { IgnoreRecoveryLogs = ignoreRecoveryLogs }, _blockchainActorRef);
+            Consensus.Tell(new ConsensusService.Start {IgnoreRecoveryLogs = ignoreRecoveryLogs}, blockchainActor);
         }
 
         public void StartNode(ChannelsConfig config)
