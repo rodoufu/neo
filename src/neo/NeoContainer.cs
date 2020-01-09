@@ -1,4 +1,3 @@
-using System;
 using Akka.Actor;
 using Akka.DI.AutoFac;
 using Akka.DI.Core;
@@ -75,7 +74,7 @@ namespace Neo
                 c.Resolve<NeoContainer>(),
                 p.Named<MemoryPool>("memoryPool"),
                 p.Named<IStore>("store")
-            )).SingleInstance().As<Blockchain>().OnActivating(h => h.Instance.UpdateCurrentSnapshot());
+            )).SingleInstance().As<Blockchain>();
             Builder.RegisterType<Blockchain.BlockchainActor>().SingleInstance();
             Builder.Register((c, p) =>
             {
@@ -104,15 +103,19 @@ namespace Neo
                 );
             }).SingleInstance().Named<IActorRef>(typeof(TaskManager).Name);
 
-//            // ConsensusService
-//            Builder.Register((c, p) => new ConsensusService(
-//                c.Resolve<LocalNodeActor>(),
-//                c.Resolve<TaskManagerActor>(),
-//                c.Resolve<LocalNode>(),
-//                c.Resolve<Blockchain>(),
-//                p.Named<Store>("store"),
-//                p.Named<Wallet>("wallet")
-//            )).As<ConsensusService>();
+//            Builder.RegisterType<ConsensusService>().SingleInstance();
+            Builder.Register((c, p) => new ConsensusService(
+                c.Resolve<NeoContainer>(),
+                p.Named<IStore>("store"),
+                p.Named<Wallet>("wallet")
+            )).As<ConsensusService>();
+            Builder.Register((c, p) =>
+            {
+                var actorSystem = c.Resolve<ActorSystem>();
+                return actorSystem.ActorOf(
+                    actorSystem.DI().Props<ConsensusService.ConsensusServiceActor>().WithMailbox("consensus-service-mailbox")
+                );
+            }).SingleInstance().Named<IActorRef>(typeof(ConsensusService).Name);
 //            Register<ConsensusService, ConsensusServiceActor>(Builder, "consensus-service-mailbox");
 //
 //            // ProtocolHandler

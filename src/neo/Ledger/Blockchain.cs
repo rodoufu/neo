@@ -60,14 +60,17 @@ namespace Neo.Ledger
 
         private static readonly Script onPersistNativeContractScript;
         private const int MaxTxToReverifyPerIdle = 10;
-        private static readonly object lockObj = new object();
         private readonly List<UInt256> header_index = new List<UInt256>();
         private uint stored_header_count = 0;
         private readonly Dictionary<UInt256, Block> block_cache = new Dictionary<UInt256, Block>();
-        private readonly Dictionary<uint, LinkedList<Block>> block_cache_unverified = new Dictionary<uint, LinkedList<Block>>();
-        private readonly IActorRef consensusServiceActor;
-        private readonly IActorRef localNodeActor;
-        private readonly IActorRef taskManagerActor;
+
+        private readonly Dictionary<uint, LinkedList<Block>> block_cache_unverified =
+            new Dictionary<uint, LinkedList<Block>>();
+
+        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
+        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
+        private IActorRef consensusServiceActor => neoContainer.ConsensusServiceActor;
+        private readonly NeoContainer neoContainer;
         internal readonly RelayCache ConsensusRelayCache = new RelayCache(100);
         private SnapshotView currentSnapshot;
 
@@ -83,7 +86,7 @@ namespace Neo.Ledger
         {
             GenesisBlock.RebuildMerkleRoot();
 
-            NativeContract[] contracts = { NativeContract.GAS, NativeContract.NEO };
+            NativeContract[] contracts = {NativeContract.GAS, NativeContract.NEO};
             using (ScriptBuilder sb = new ScriptBuilder())
             {
                 foreach (NativeContract contract in contracts)
@@ -96,51 +99,10 @@ namespace Neo.Ledger
         public Blockchain(NeoContainer neoContainer, MemoryPool memoryPool, IStore store)
         {
             // TODO rodoufu fix this
-//            this.localNodeActor = neoContainer.LocalNodeActor;
-//            this.consensusServiceActor = neoContainer.ConsensusServiceActor;
-//            this.taskManagerActor = neoContainer.TaskManagerActor;
+            this.neoContainer = neoContainer;
             this.MemPool = memoryPool;
             this.Store = store;
             this.View = new ReadOnlyView(store);
-
-            /*
-//            this.system = system;
-//            this.MemPool = new MemoryPool(system, ProtocolSettings.Default.MemoryPoolMaxTransactions);
-            lock (lockObj)
-            {
-                if (singleton != null)
-                    throw new InvalidOperationException();
-                header_index.AddRange(View.HeaderHashList.Find().OrderBy(p => (uint)p.Key).SelectMany(p => p.Value.Hashes));
-                stored_header_count += (uint)header_index.Count;
-                if (stored_header_count == 0)
-                {
-                    header_index.AddRange(View.Blocks.Find().OrderBy(p => p.Value.Index).Select(p => p.Key));
-                }
-                else
-                {
-                    HashIndexState hashIndex = View.HeaderHashIndex.Get();
-                    if (hashIndex.Index >= stored_header_count)
-                    {
-                        DataCache<UInt256, TrimmedBlock> cache = View.Blocks;
-                        for (UInt256 hash = hashIndex.Hash; hash != header_index[(int)stored_header_count - 1];)
-                        {
-                            header_index.Insert((int)stored_header_count, hash);
-                            hash = cache[hash].PrevHash;
-                        }
-                    }
-                }
-                if (header_index.Count == 0)
-                {
-                    Persist(GenesisBlock);
-                }
-                else
-                {
-                    UpdateCurrentSnapshot();
-                    MemPool.LoadPolicy(currentSnapshot);
-                }
-                singleton = this;
-            }
-            */
         }
 
         public bool ContainsBlock(UInt256 hash)
@@ -163,11 +125,12 @@ namespace Neo.Ledger
                 sb.EmitSysCall(InteropService.Native.Deploy);
                 script = sb.ToArray();
             }
+
             return new Transaction
             {
                 Version = 0,
                 Script = script,
-                Sender = (new[] { (byte)OpCode.PUSH1 }).ToScriptHash(),
+                Sender = (new[] {(byte) OpCode.PUSH1}).ToScriptHash(),
                 SystemFee = 0,
                 Attributes = new TransactionAttribute[0],
                 Cosigners = new Cosigner[0],
@@ -176,7 +139,7 @@ namespace Neo.Ledger
                     new Witness
                     {
                         InvocationScript = Array.Empty<byte>(),
-                        VerificationScript = new[] { (byte)OpCode.PUSH1 }
+                        VerificationScript = new[] {(byte) OpCode.PUSH1}
                     }
                 }
             };
@@ -200,12 +163,13 @@ namespace Neo.Ledger
         public UInt256 GetBlockHash(uint index)
         {
             if (header_index.Count <= index) return null;
-            return header_index[(int)index];
+            return header_index[(int) index];
         }
 
         public static UInt160 GetConsensusAddress(ECPoint[] validators)
         {
-            return Contract.CreateMultiSigRedeemScript(validators.Length - (validators.Length - 1) / 3, validators).ToScriptHash();
+            return Contract.CreateMultiSigRedeemScript(validators.Length - (validators.Length - 1) / 3, validators)
+                .ToScriptHash();
         }
 
         public Header GetHeader(uint index)
@@ -266,10 +230,11 @@ namespace Neo.Ledger
                 {
                     snapshot.HeaderHashList.Add(stored_header_count, new HeaderHashList
                     {
-                        Hashes = header_index.Skip((int)stored_header_count).Take(2000).ToArray()
+                        Hashes = header_index.Skip((int) stored_header_count).Take(2000).ToArray()
                     });
                     stored_header_count += 2000;
                 }
+
                 if (snapshot_created) snapshot.Commit();
             }
             finally
@@ -278,10 +243,9 @@ namespace Neo.Ledger
             }
         }
 
-        internal void UpdateCurrentSnapshot()
+        private void UpdateCurrentSnapshot()
         {
             Interlocked.Exchange(ref currentSnapshot, GetSnapshot())?.Dispose();
         }
     }
-
 }

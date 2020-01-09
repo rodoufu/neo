@@ -1,15 +1,17 @@
 using Akka.Actor;
 using Neo.IO.Actors;
+using Neo.IO.Caching;
+using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
 using Neo.Plugins;
 using Neo.SmartContract;
+using Neo.SmartContract.Native;
 using Neo.VM;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Neo.Network.P2P;
-using Neo.SmartContract.Native;
 
 namespace Neo.Ledger
 {
@@ -22,6 +24,40 @@ namespace Neo.Ledger
             public BlockchainActor(Blockchain blockchain)
             {
                 this.blockchain = blockchain;
+
+                lock (blockchain)
+                {
+                    blockchain.header_index.AddRange(blockchain.View.HeaderHashList.Find().OrderBy(p => (uint) p.Key)
+                        .SelectMany(p => p.Value.Hashes));
+                    blockchain.stored_header_count += (uint) blockchain.header_index.Count;
+                    if (blockchain.stored_header_count == 0)
+                    {
+                        blockchain.header_index.AddRange(blockchain.View.Blocks.Find().OrderBy(p => p.Value.Index).Select(p => p.Key));
+                    }
+                    else
+                    {
+                        HashIndexState hashIndex = blockchain.View.HeaderHashIndex.Get();
+                        if (hashIndex.Index >= blockchain.stored_header_count)
+                        {
+                            DataCache<UInt256, TrimmedBlock> cache = blockchain.View.Blocks;
+                            for (UInt256 hash = hashIndex.Hash; hash != blockchain.header_index[(int) blockchain.stored_header_count - 1];)
+                            {
+                                blockchain.header_index.Insert((int) blockchain.stored_header_count, hash);
+                                hash = cache[hash].PrevHash;
+                            }
+                        }
+                    }
+
+                    if (blockchain.header_index.Count == 0)
+                    {
+                        Persist(GenesisBlock);
+                    }
+                    else
+                    {
+                        blockchain.UpdateCurrentSnapshot();
+                        blockchain.MemPool.LoadPolicy(blockchain.currentSnapshot);
+                    }
+                }
             }
 
             protected override void OnReceive(object message)

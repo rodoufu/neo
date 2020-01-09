@@ -44,9 +44,8 @@ namespace Neo.Network.P2P
                 $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
         }
 
-        public LocalNode(/*NeoContainer neoContainer*/)
+        public LocalNode(NeoContainer neoContainer)
         {
-            /*
             this.neoContainer = neoContainer;
 
             // Start dns resolution in parallel
@@ -55,7 +54,6 @@ namespace Neo.Network.P2P
                 int index = i;
                 Task.Run(() => SeedList[index] = GetIpEndPoint(ProtocolSettings.Default.SeedList[index]));
             }
-            */
         }
 
         /// <summary>

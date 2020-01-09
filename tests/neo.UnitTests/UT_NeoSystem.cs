@@ -1,11 +1,12 @@
 using Akka.Actor;
 using Autofac;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Neo.Network.P2P;
 using Neo.Persistence;
 using NSubstitute;
 using FluentAssertions;
 using Neo.Ledger;
-using Neo.Network.P2P;
+using Neo.UnitTests.Wallets;
 
 namespace Neo.UnitTests
 {
@@ -41,11 +42,24 @@ namespace Neo.UnitTests
         }
 
         [TestMethod]
-        public void CreatingBlockchain()
+        public void CreatingConsensusService()
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
             Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var consensusService = container.ResolveConsensusService(store, new MyWallet());
+            Assert.IsNotNull(consensusService);
+        }
+
+        [TestMethod]
+        public void CreatingBlockchain()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            container.ResolveConsensusService(store, new MyWallet());
 
             var blockchain = container.Container.Resolve<Blockchain>();
             Assert.IsNotNull(blockchain);
