@@ -1,6 +1,4 @@
 using Akka.Actor;
-using Neo.IO;
-using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using System;
 using System.Collections.Concurrent;
@@ -9,9 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Threading;
-using Akka.DI.Core;
-using Neo.Consensus;
 using System.Threading.Tasks;
 
 namespace Neo.Network.P2P
@@ -25,23 +20,20 @@ namespace Neo.Network.P2P
         public const uint ProtocolVersion = 0;
         private readonly IPEndPoint[] SeedList = new IPEndPoint[ProtocolSettings.Default.SeedList.Length];
 
-        private static readonly object lockObj = new object();
-
-        internal readonly ConcurrentDictionary<IActorRef, RemoteNode> RemoteNodes =
-            new ConcurrentDictionary<IActorRef, RemoteNode>();
+        internal readonly ConcurrentDictionary<IActorRef, RemoteNode> RemoteNodes = new ConcurrentDictionary<IActorRef, RemoteNode>();
 
         public int ConnectedCount => RemoteNodes.Count;
         public int UnconnectedCount => UnconnectedPeers.Count;
         public static readonly uint Nonce;
         public static string UserAgent { get; set; }
+
         private readonly NeoContainer neoContainer;
 
         static LocalNode()
         {
             Random rand = new Random();
-            Nonce = (uint) rand.Next();
-            UserAgent =
-                $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
+            Nonce = (uint)rand.Next();
+            UserAgent = $"/{Assembly.GetExecutingAssembly().GetName().Name}:{Assembly.GetExecutingAssembly().GetVersion()}/";
         }
 
         public LocalNode(NeoContainer neoContainer)
@@ -80,9 +72,7 @@ namespace Neo.Network.P2P
             {
                 return null;
             }
-
-            ipAddress = entry.AddressList.FirstOrDefault(p =>
-                p.AddressFamily == AddressFamily.InterNetwork || p.IsIPv6Teredo);
+            ipAddress = entry.AddressList.FirstOrDefault(p => p.AddressFamily == AddressFamily.InterNetwork || p.IsIPv6Teredo);
             if (ipAddress == null) return null;
             return new IPEndPoint(ipAddress, port);
         }

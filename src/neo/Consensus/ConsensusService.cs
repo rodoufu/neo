@@ -1,18 +1,11 @@
 using Akka.Actor;
-using Akka.Configuration;
-using Neo.Cryptography;
-using Neo.IO;
-using Neo.IO.Actors;
 using Neo.Ledger;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
-using Neo.Plugins;
-using Neo.SmartContract.Native;
 using Neo.Wallets;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Autofac;
 
@@ -27,8 +20,8 @@ namespace Neo.Consensus
         private readonly NeoContainer neoContainer;
         private readonly ConsensusContext context;
         private IActorRef localNode => neoContainer.LocalNodeActor;
-        private LocalNode theLocalNode => neoContainer.LocalNode;
         private IActorRef taskManager => neoContainer.TaskManagerActor;
+        private LocalNode theLocalNode => neoContainer.LocalNode;
         private Blockchain blockchain => neoContainer.Blockchain;
         private ICancelable timer_token;
         private DateTime block_received_time;
@@ -53,7 +46,7 @@ namespace Neo.Consensus
         public ConsensusService(NeoContainer neoContainer, IStore store, Wallet wallet)
         {
             this.neoContainer = neoContainer;
-            this.context = new ConsensusContext(wallet, store);
+            this.context = neoContainer.ResolveConsensusContext(store, wallet);
         }
 
         private void CheckCommits()
@@ -75,13 +68,6 @@ namespace Neo.Consensus
         {
             if (context.Block.Index == blockchain.HeaderHeight + 1)
                 localNode.Tell(new LocalNode.SendDirectly { Inventory = context.MakeRecoveryRequest() });
-        }
-
-        private static ConsensusService CreateConsensusService(Wallet wallet, NeoContainer neoContainer)
-        {
-            var consensusService = neoContainer.Container.Resolve<ConsensusService>();
-            consensusService.context.Wallet = wallet;
-            return consensusService;
         }
 
     }

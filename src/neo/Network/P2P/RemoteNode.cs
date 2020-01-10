@@ -17,11 +17,8 @@ namespace Neo.Network.P2P
     {
         internal class Relay { public IInventory Inventory; }
 
-        private readonly LocalNode localNode;
-        private readonly IActorRef protocol;
         private readonly Queue<Message> message_queue_high = new Queue<Message>();
         private readonly Queue<Message> message_queue_low = new Queue<Message>();
-        private readonly IActorRef taskManagerActor;
         private ByteString msg_buffer = ByteString.Empty;
         private BloomFilter bloom_filter;
         private bool ack = true;
@@ -33,18 +30,23 @@ namespace Neo.Network.P2P
         public uint LastBlockIndex { get; private set; } = 0;
         public bool IsFullNode { get; private set; } = false;
 
-        public RemoteNode(ProtocolHandlerProps protocolHandlerProps, object connection, IPEndPoint remote, IPEndPoint local,
-            LocalNode localNode, Blockchain blockchain, NeoContainer neoContainer)
+        private readonly NeoContainer neoContainer;
+        private LocalNode localNode => neoContainer.LocalNode;
+        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
+        private IActorRef protocol;
+
+        public RemoteNode(object connection, IPEndPoint remote, IPEndPoint local, NeoContainer neoContainer)
             : base(connection, remote, local)
         {
-            this.localNode = localNode;
-            this.protocol = protocolHandlerProps;
+            this.neoContainer = neoContainer;
+            // TODO rodoufu solve this
+//            this.protocol = Context.ActorOf(ProtocolHandler.Props(system));
+//            LocalNode.Singleton.RemoteNodes.TryAdd(Self, this);
             localNode.RemoteNodes.TryAdd(Self, this);
-            this.taskManagerActor = neoContainer.TaskManagerActor;
 
             var capabilities = new List<NodeCapability>
             {
-                new FullNodeCapability(blockchain.Height)
+                new FullNodeCapability(neoContainer.Blockchain.Height)
             };
 
             if (localNode.ListenerTcpPort > 0) capabilities.Add(new ServerCapability(NodeCapabilityType.TcpServer, (ushort)localNode.ListenerTcpPort));
@@ -237,6 +239,11 @@ namespace Neo.Network.P2P
             localNode.RemoteNodes.TryRemove(Self, out _);
             base.PostStop();
         }
+
+//        internal static Props Props(NeoSystem system, object connection, IPEndPoint remote, IPEndPoint local)
+//        {
+//            return Akka.Actor.Props.Create(() => new RemoteNode(system, connection, remote, local)).WithMailbox("remote-node-mailbox");
+//        }
 
         private void SendMessage(Message message)
         {

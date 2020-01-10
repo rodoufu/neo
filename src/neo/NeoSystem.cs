@@ -10,13 +10,13 @@ namespace Neo
 {
     public class NeoSystem : IDisposable
     {
-        public ActorSystem ActorSystem { get; }
+        public ActorSystem ActorSystem => neoContainer.ActorSystem;
 
-        private readonly NeoContainer neoContainer;
         private readonly IStore store;
         private ChannelsConfig start_message = null;
         private bool suspend = false;
 
+        private readonly NeoContainer neoContainer;
         private IActorRef localNodeActor => neoContainer.LocalNodeActor;
         private IActorRef blockchainActor => neoContainer.BlockchainActor;
         private IActorRef Consensus => neoContainer.ConsensusServiceActor;

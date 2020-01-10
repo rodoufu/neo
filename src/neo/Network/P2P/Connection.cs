@@ -21,23 +21,18 @@ namespace Neo.Network.P2P
         /// </summary>
         private const int connectionTimeoutLimit = 60;
 
-        public IPEndPoint Remote { get; set; }
-        public IPEndPoint Local { get; set; }
+        public IPEndPoint Remote { get; }
+        public IPEndPoint Local { get; }
 
         private ICancelable timer;
-        private IActorRef tcp;
-        private WebSocket ws;
+        private readonly IActorRef tcp;
+        private readonly WebSocket ws;
         private bool disconnected = false;
         protected Connection(object connection, IPEndPoint remote, IPEndPoint local)
         {
             this.Remote = remote;
             this.Local = local;
             this.timer = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(connectionTimeoutLimitStart), Self, Timer.Instance, ActorRefs.NoSender);
-            SetConnection(connection);
-        }
-
-        public void SetConnection(object connection)
-        {
             switch (connection)
             {
                 case IActorRef tcp:

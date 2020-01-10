@@ -26,8 +26,8 @@ namespace Neo.Network.P2P
         private static readonly TimeSpan TaskTimeout = TimeSpan.FromMinutes(1);
 
         private const int MaxConncurrentTasks = 3;
-        private const int PingCoolingOffPeriod = 60; // in secconds
 
+        private const int PingCoolingOffPeriod = 60; // in seconds.
         /// <summary>
         /// A set of known hashes, of inventories or payloads, already received.
         /// </summary>

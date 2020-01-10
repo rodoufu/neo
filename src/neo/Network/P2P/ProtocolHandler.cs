@@ -1,8 +1,6 @@
 using Akka.Actor;
 using Akka.Configuration;
-using Akka.DI.Core;
 using Neo.Cryptography;
-using Neo.IO;
 using Neo.IO.Actors;
 using Neo.IO.Caching;
 using Neo.Ledger;
@@ -34,21 +32,21 @@ namespace Neo.Network.P2P
         private readonly PendingKnownHashesCollection pendingKnownHashes;
         private readonly HashSetCache<UInt256> knownHashes;
         private readonly HashSetCache<UInt256> sentHashes;
-        private readonly NeoContainer neoContainer;
         private VersionPayload version;
         private bool verack = false;
         private BloomFilter bloom_filter;
-
-        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
-        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
-        private LocalNode localNode => neoContainer.LocalNode;
-        private Blockchain blockchain => neoContainer.Blockchain;
-        private IActorRef blockchainActor => neoContainer.BlockchainActor;
 
         private static readonly TimeSpan TimerInterval = TimeSpan.FromSeconds(30);
         private static readonly TimeSpan PendingTimeout = TimeSpan.FromMinutes(1);
 
         private readonly ICancelable timer = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimerInterval, TimerInterval, Context.Self, new Timer(), ActorRefs.NoSender);
+
+        private readonly NeoContainer neoContainer;
+        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
+        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
+        private LocalNode localNode => neoContainer.LocalNode;
+        private Blockchain blockchain => neoContainer.Blockchain;
+        private IActorRef blockchainActor => neoContainer.BlockchainActor;
 
         public ProtocolHandler(NeoContainer neoContainer)
         {

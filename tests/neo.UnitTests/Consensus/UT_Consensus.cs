@@ -474,7 +474,7 @@ namespace Neo.UnitTests.Consensus
         [TestMethod]
         public void TestSerializeAndDeserializeConsensusContext()
         {
-            var consensusContext = new ConsensusContext(null, null)
+            var consensusContext = new ConsensusContext(null, null, null)
             {
                 Block = new Block
                 {
@@ -549,7 +549,7 @@ namespace Neo.UnitTests.Consensus
 
             consensusContext.LastChangeViewPayloads = new ConsensusPayload[consensusContext.Validators.Length];
 
-            var copiedContext = TestUtils.CopyMsgBySerialization(consensusContext, new ConsensusContext(null, null));
+            var copiedContext = TestUtils.CopyMsgBySerialization(consensusContext, new ConsensusContext(null, null, null));
 
             copiedContext.Block.PrevHash.Should().Be(consensusContext.Block.PrevHash);
             copiedContext.Block.Index.Should().Be(consensusContext.Block.Index);

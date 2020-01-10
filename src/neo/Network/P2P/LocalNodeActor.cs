@@ -3,16 +3,9 @@ using Neo.IO;
 using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Threading;
-using Akka.DI.Core;
-using Neo.Consensus;
-using System.Threading.Tasks;
 
 namespace Neo.Network.P2P
 {

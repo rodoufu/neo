@@ -92,7 +92,7 @@ namespace Neo.Ledger
                         Sender.Tell(OnNewConsensus(payload));
                         break;
                     case Idle _:
-                        if (blockchain.MemPool.ReVerifyTopUnverifiedTransactionsIfNeeded(MaxTxToReverifyPerIdle, blockchain.currentSnapshot, blockchain))
+                        if (blockchain.MemPool.ReVerifyTopUnverifiedTransactionsIfNeeded(MaxTxToReverifyPerIdle, blockchain.currentSnapshot))
                             Self.Tell(Idle.Instance, ActorRefs.NoSender);
                         break;
                 }
@@ -195,7 +195,7 @@ namespace Neo.Ledger
             private void OnPersistCompleted(Block block)
             {
                 blockchain.block_cache.Remove(block.Hash);
-                blockchain.MemPool.UpdatePoolForBlockPersisted(block, blockchain.currentSnapshot, blockchain);
+                blockchain.MemPool.UpdatePoolForBlockPersisted(block, blockchain.currentSnapshot);
                 Context.System.EventStream.Publish(new PersistCompleted {Block = block});
             }
 

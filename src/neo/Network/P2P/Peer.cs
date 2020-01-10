@@ -1,10 +1,5 @@
 using Akka.Actor;
-using Akka.IO;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Neo.IO;
-using System;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,9 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Threading.Tasks;
 
 namespace Neo.Network.P2P
 {

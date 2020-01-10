@@ -22,7 +22,6 @@ namespace Neo.Consensus
         /// </summary>
         private const byte ConsensusStatePrefix = 0xf4;
 
-        public Blockchain blockchain;
         public Block Block;
         public byte ViewNumber;
         public ECPoint[] Validators;
@@ -32,9 +31,7 @@ namespace Neo.Consensus
         public ConsensusPayload[] PreparationPayloads;
         public ConsensusPayload[] CommitPayloads;
         public ConsensusPayload[] ChangeViewPayloads;
-
         public ConsensusPayload[] LastChangeViewPayloads;
-
         // LastSeenMessage array stores the height of the last seen message, for each validator.
         // if this node never heard from validator i, LastSeenMessage[i] will be -1.
         public int[] LastSeenMessage;
@@ -47,7 +44,7 @@ namespace Neo.Consensus
         public SnapshotView Snapshot { get; private set; }
         private KeyPair keyPair;
         private int _witnessSize;
-        private Wallet _wallet;
+        private readonly Wallet wallet;
         private readonly IStore store;
 
         public int F => (Validators.Length - 1) / 3;
@@ -57,54 +54,32 @@ namespace Neo.Consensus
         public bool WatchOnly => MyIndex < 0;
         public Header PrevHeader => Snapshot.GetHeader(Block.PrevHash);
         public int CountCommitted => CommitPayloads.Count(p => p != null);
-        public int CountFailed => LastSeenMessage.Count(p => p < ((int) Block.Index) - 1);
+        public int CountFailed => LastSeenMessage.Count(p => p < (((int)Block.Index) - 1));
 
         #region Consensus States
-
         public bool RequestSentOrReceived => PreparationPayloads[Block.ConsensusData.PrimaryIndex] != null;
         public bool ResponseSent => !WatchOnly && PreparationPayloads[MyIndex] != null;
         public bool CommitSent => !WatchOnly && CommitPayloads[MyIndex] != null;
         public bool BlockSent => Block.Transactions != null;
-
-        public bool ViewChanging => !WatchOnly &&
-                                    ChangeViewPayloads[MyIndex]?.GetDeserializedMessage<ChangeView>().NewViewNumber >
-                                    ViewNumber;
-
+        public bool ViewChanging => !WatchOnly && ChangeViewPayloads[MyIndex]?.GetDeserializedMessage<ChangeView>().NewViewNumber > ViewNumber;
         public bool NotAcceptingPayloadsDueToViewChanging => ViewChanging && !MoreThanFNodesCommittedOrLost;
-
         // A possible attack can happen if the last node to commit is malicious and either sends change view after his
         // commit to stall nodes in a higher view, or if he refuses to send recovery messages. In addition, if a node
         // asking change views loses network or crashes and comes back when nodes are committed in more than one higher
         // numbered view, it is possible for the node accepting recovery to commit in any of the higher views, thus
         // potentially splitting nodes among views and stalling the network.
         public bool MoreThanFNodesCommittedOrLost => (CountCommitted + CountFailed) > F;
-
         #endregion
 
-        public ConsensusContext(Blockchain blockchain)
-        {
-            this.blockchain = blockchain;
-        }
-
-        public Wallet Wallet
-        {
-            private get => _wallet;
-            set
-            {
-                if (_wallet != null)
-                {
-                    throw new ArgumentException("Wallet value already initialized.");
-                }
-
-                _wallet = value;
-            }
-        }
+        private readonly NeoContainer neoContainer;
+        private Blockchain blockchain => neoContainer.Blockchain;
 
         public int Size => throw new NotImplementedException();
 
-        public ConsensusContext(Wallet wallet, IStore store)
+        public ConsensusContext(NeoContainer neoContainer, Wallet wallet, IStore store)
         {
-            this.Wallet = wallet;
+            this.neoContainer = neoContainer;
+            this.wallet = wallet;
             this.store = store;
         }
 
@@ -119,7 +94,6 @@ namespace Neo.Consensus
                 sc.AddSignature(contract, Validators[i], CommitPayloads[i].GetDeserializedMessage<Commit>().Signature);
                 j++;
             }
-
             Block.Witness = sc.GetWitnesses()[0];
             Block.Transactions = TransactionHashes.Select(p => Transactions[p]).ToArray();
             return Block;
@@ -144,9 +118,7 @@ namespace Neo.Consensus
             LastChangeViewPayloads = reader.ReadNullableArray<ConsensusPayload>(Blockchain.MaxValidators);
             if (TransactionHashes.Length == 0 && !RequestSentOrReceived)
                 TransactionHashes = null;
-            Transactions = transactions.Length == 0 && !RequestSentOrReceived
-                ? null
-                : transactions.ToDictionary(p => p.Hash);
+            Transactions = transactions.Length == 0 && !RequestSentOrReceived ? null : transactions.ToDictionary(p => p.Hash);
             SendersFeeMonitor = new SendersFeeMonitor();
             if (Transactions != null)
             {
@@ -171,8 +143,8 @@ namespace Neo.Consensus
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetPrimaryIndex(byte viewNumber)
         {
-            int p = ((int) Block.Index - viewNumber) % Validators.Length;
-            return p >= 0 ? (uint) p : (uint) (p + Validators.Length);
+            int p = ((int)Block.Index - viewNumber) % Validators.Length;
+            return p >= 0 ? (uint)p : (uint)(p + Validators.Length);
         }
 
         public bool Load()
@@ -190,7 +162,6 @@ namespace Neo.Consensus
                 {
                     return false;
                 }
-
                 return true;
             }
         }
@@ -220,7 +191,7 @@ namespace Neo.Consensus
                 Version = Block.Version,
                 PrevHash = Block.PrevHash,
                 BlockIndex = Block.Index,
-                ValidatorIndex = (ushort) MyIndex,
+                ValidatorIndex = (ushort)MyIndex,
                 ConsensusMessage = message
             };
             SignPayload(payload);
@@ -233,13 +204,12 @@ namespace Neo.Consensus
             try
             {
                 sc = new ContractParametersContext(payload);
-                Wallet.Sign(sc);
+                wallet.Sign(sc);
             }
             catch (InvalidOperationException)
             {
                 return;
             }
-
             payload.Witness = sc.GetWitnesses()[0];
         }
 
@@ -249,7 +219,7 @@ namespace Neo.Consensus
         internal int GetExpectedBlockSize()
         {
             return GetExpectedBlockSizeWithoutTransactions(Transactions.Count) + // Base size
-                   Transactions.Values.Sum(u => u.Size); // Sum Txs
+                Transactions.Values.Sum(u => u.Size);   // Sum Txs
         }
 
         /// <summary>
@@ -260,18 +230,18 @@ namespace Neo.Consensus
         {
             var blockSize =
                 // BlockBase
-                sizeof(uint) + //Version
-                UInt256.Length + //PrevHash
-                UInt256.Length + //MerkleRoot
-                sizeof(ulong) + //Timestamp
-                sizeof(uint) + //Index
-                UInt160.Length + //NextConsensus
-                1 + //
-                _witnessSize; //Witness
+                sizeof(uint) +       //Version
+                UInt256.Length +     //PrevHash
+                UInt256.Length +     //MerkleRoot
+                sizeof(ulong) +      //Timestamp
+                sizeof(uint) +       //Index
+                UInt160.Length +     //NextConsensus
+                1 +                  //
+                _witnessSize;        //Witness
 
             blockSize +=
                 // Block
-                Block.ConsensusData.Size + //ConsensusData
+                Block.ConsensusData.Size +                      //ConsensusData
                 IO.Helper.GetVarSize(expectedTransactions + 1); //Transactions count
 
             return blockSize;
@@ -287,7 +257,7 @@ namespace Neo.Consensus
             uint maxTransactionsPerBlock = NativeContract.Policy.GetMaxTransactionsPerBlock(Snapshot);
 
             // Limit Speaker proposal to the limit `MaxTransactionsPerBlock` or all available transactions of the mempool
-            txs = txs.Take((int) maxTransactionsPerBlock);
+            txs = txs.Take((int)maxTransactionsPerBlock);
             List<UInt256> hashes = new List<UInt256>();
             Transactions = new Dictionary<UInt256, Transaction>();
             SendersFeeMonitor = new SendersFeeMonitor();
@@ -348,27 +318,15 @@ namespace Neo.Consensus
                     TransactionHashes = TransactionHashes
                 };
             }
-
             return MakeSignedPayload(new RecoveryMessage()
             {
-                ChangeViewMessages = LastChangeViewPayloads.Where(p => p != null)
-                    .Select(p => RecoveryMessage.ChangeViewPayloadCompact.FromPayload(p)).Take(M)
-                    .ToDictionary(p => (int) p.ValidatorIndex),
+                ChangeViewMessages = LastChangeViewPayloads.Where(p => p != null).Select(p => RecoveryMessage.ChangeViewPayloadCompact.FromPayload(p)).Take(M).ToDictionary(p => (int)p.ValidatorIndex),
                 PrepareRequestMessage = prepareRequestMessage,
                 // We only need a PreparationHash set if we don't have the PrepareRequest information.
-                PreparationHash = TransactionHashes == null
-                    ? PreparationPayloads.Where(p => p != null)
-                        .GroupBy(p => p.GetDeserializedMessage<PrepareResponse>().PreparationHash,
-                            (k, g) => new {Hash = k, Count = g.Count()}).OrderByDescending(p => p.Count)
-                        .Select(p => p.Hash).FirstOrDefault()
-                    : null,
-                PreparationMessages = PreparationPayloads.Where(p => p != null)
-                    .Select(p => RecoveryMessage.PreparationPayloadCompact.FromPayload(p))
-                    .ToDictionary(p => (int) p.ValidatorIndex),
+                PreparationHash = TransactionHashes == null ? PreparationPayloads.Where(p => p != null).GroupBy(p => p.GetDeserializedMessage<PrepareResponse>().PreparationHash, (k, g) => new { Hash = k, Count = g.Count() }).OrderByDescending(p => p.Count).Select(p => p.Hash).FirstOrDefault() : null,
+                PreparationMessages = PreparationPayloads.Where(p => p != null).Select(p => RecoveryMessage.PreparationPayloadCompact.FromPayload(p)).ToDictionary(p => (int)p.ValidatorIndex),
                 CommitMessages = CommitSent
-                    ? CommitPayloads.Where(p => p != null)
-                        .Select(p => RecoveryMessage.CommitPayloadCompact.FromPayload(p))
-                        .ToDictionary(p => (int) p.ValidatorIndex)
+                    ? CommitPayloads.Where(p => p != null).Select(p => RecoveryMessage.CommitPayloadCompact.FromPayload(p)).ToDictionary(p => (int)p.ValidatorIndex)
                     : new Dictionary<int, RecoveryMessage.CommitPayloadCompact>()
             });
         }
@@ -404,7 +362,6 @@ namespace Neo.Consensus
                         {
                             sb.EmitPush(new byte[64]);
                         }
-
                         _witnessSize = new Witness
                         {
                             InvocationScript = sb.ToArray(),
@@ -412,7 +369,6 @@ namespace Neo.Consensus
                         }.Size;
                     }
                 }
-
                 MyIndex = -1;
                 ChangeViewPayloads = new ConsensusPayload[Validators.Length];
                 LastChangeViewPayloads = new ConsensusPayload[Validators.Length];
@@ -423,11 +379,10 @@ namespace Neo.Consensus
                     for (int i = 0; i < Validators.Length; i++)
                         LastSeenMessage[i] = -1;
                 }
-
                 keyPair = null;
                 for (int i = 0; i < Validators.Length; i++)
                 {
-                    WalletAccount account = Wallet?.GetAccount(Validators[i]);
+                    WalletAccount account = wallet?.GetAccount(Validators[i]);
                     if (account?.HasKey != true) continue;
                     MyIndex = i;
                     keyPair = account.GetKey();
@@ -442,7 +397,6 @@ namespace Neo.Consensus
                     else
                         LastChangeViewPayloads[i] = null;
             }
-
             ViewNumber = viewNumber;
             Block.ConsensusData = new ConsensusData
             {
@@ -453,7 +407,7 @@ namespace Neo.Consensus
             Block.Transactions = null;
             TransactionHashes = null;
             PreparationPayloads = new ConsensusPayload[Validators.Length];
-            if (MyIndex >= 0) LastSeenMessage[MyIndex] = (int) Block.Index;
+            if (MyIndex >= 0) LastSeenMessage[MyIndex] = (int)Block.Index;
         }
 
         public void Save()

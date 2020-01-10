@@ -123,6 +123,7 @@ namespace Neo.SmartContract
 
         public static ApplicationEngine Run(byte[] script, IVerifiable container = null, Block persistingBlock = null, bool testMode = false, long extraGAS = default)
         {
+            // It's hacky
             using (SnapshotView snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
             {
                 return Run(script, snapshot, container, persistingBlock, testMode, extraGAS);

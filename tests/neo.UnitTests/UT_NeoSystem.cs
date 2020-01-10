@@ -14,7 +14,6 @@ namespace Neo.UnitTests
     public class UT_NeoSystem
     {
         private IStore store;
-        private NeoSystem neoSystem;
         private NeoContainer container;
 
         [TestInitialize]

@@ -1,16 +1,8 @@
 using Akka.Actor;
-using Akka.Configuration;
-using Akka.DI.Core;
-using Neo.Consensus;
-using Neo.Cryptography;
 using Neo.Cryptography.ECC;
-using Neo.IO;
-using Neo.IO.Actors;
 using Neo.IO.Caching;
-using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
-using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -18,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Neo.Ledger
 {
@@ -32,9 +23,9 @@ namespace Neo.Ledger
         public class FillCompleted { }
         private class ParallelVerified { public Transaction Transaction; public bool ShouldRelay; public RelayResultReason VerifyResult; }
 
+        public static readonly uint MillisecondsPerBlock = ProtocolSettings.Default.MillisecondsPerBlock;
         public const uint DecrementInterval = 2000000;
         public const int MaxValidators = 1024;
-        public static readonly uint MillisecondsPerBlock = ProtocolSettings.Default.MillisecondsPerBlock;
         public static readonly uint[] GenerationAmount = { 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
         public static readonly TimeSpan TimePerBlock = TimeSpan.FromMilliseconds(MillisecondsPerBlock);
         public static readonly ECPoint[] StandbyValidators = ProtocolSettings.Default.StandbyValidators.OfType<string>().Select(p => ECPoint.DecodePoint(p.HexToBytes(), ECCurve.Secp256r1)).ToArray();
@@ -58,19 +49,12 @@ namespace Neo.Ledger
             Transactions = new[] { DeployNativeContracts() }
         };
 
-        private static readonly Script onPersistNativeContractScript;
+        private readonly static Script onPersistNativeContractScript;
         private const int MaxTxToReverifyPerIdle = 10;
         private readonly List<UInt256> header_index = new List<UInt256>();
         private uint stored_header_count = 0;
         private readonly Dictionary<UInt256, Block> block_cache = new Dictionary<UInt256, Block>();
-
-        private readonly Dictionary<uint, LinkedList<Block>> block_cache_unverified =
-            new Dictionary<uint, LinkedList<Block>>();
-
-        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
-        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
-        private IActorRef consensusServiceActor => neoContainer.ConsensusServiceActor;
-        private readonly NeoContainer neoContainer;
+        private readonly Dictionary<uint, LinkedList<Block>> block_cache_unverified = new Dictionary<uint, LinkedList<Block>>();
         internal readonly RelayCache ConsensusRelayCache = new RelayCache(100);
         private SnapshotView currentSnapshot;
 
@@ -82,11 +66,16 @@ namespace Neo.Ledger
         public UInt256 CurrentBlockHash => currentSnapshot.CurrentBlockHash;
         public UInt256 CurrentHeaderHash => currentSnapshot.CurrentHeaderHash;
 
+        private readonly NeoContainer neoContainer;
+        private IActorRef localNodeActor => neoContainer.LocalNodeActor;
+        private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
+        private IActorRef consensusServiceActor => neoContainer.ConsensusServiceActor;
+
         static Blockchain()
         {
             GenesisBlock.RebuildMerkleRoot();
 
-            NativeContract[] contracts = {NativeContract.GAS, NativeContract.NEO};
+            NativeContract[] contracts = { NativeContract.GAS, NativeContract.NEO };
             using (ScriptBuilder sb = new ScriptBuilder())
             {
                 foreach (NativeContract contract in contracts)
@@ -124,12 +113,11 @@ namespace Neo.Ledger
                 sb.EmitSysCall(InteropService.Native.Deploy);
                 script = sb.ToArray();
             }
-
             return new Transaction
             {
                 Version = 0,
                 Script = script,
-                Sender = (new[] {(byte) OpCode.PUSH1}).ToScriptHash(),
+                Sender = (new[] { (byte)OpCode.PUSH1 }).ToScriptHash(),
                 SystemFee = 0,
                 Attributes = new TransactionAttribute[0],
                 Cosigners = new Cosigner[0],
@@ -138,7 +126,7 @@ namespace Neo.Ledger
                     new Witness
                     {
                         InvocationScript = Array.Empty<byte>(),
-                        VerificationScript = new[] {(byte) OpCode.PUSH1}
+                        VerificationScript = new[] { (byte)OpCode.PUSH1 }
                     }
                 }
             };
@@ -162,13 +150,12 @@ namespace Neo.Ledger
         public UInt256 GetBlockHash(uint index)
         {
             if (header_index.Count <= index) return null;
-            return header_index[(int) index];
+            return header_index[(int)index];
         }
 
         public static UInt160 GetConsensusAddress(ECPoint[] validators)
         {
-            return Contract.CreateMultiSigRedeemScript(validators.Length - (validators.Length - 1) / 3, validators)
-                .ToScriptHash();
+            return Contract.CreateMultiSigRedeemScript(validators.Length - (validators.Length - 1) / 3, validators).ToScriptHash();
         }
 
         public Header GetHeader(uint index)
@@ -205,7 +192,6 @@ namespace Neo.Ledger
             return View.GetTransaction(hash);
         }
 
-
         private void AddUnverifiedBlockToCache(Block block)
         {
             if (!block_cache_unverified.TryGetValue(block.Index, out LinkedList<Block> blocks))
@@ -229,11 +215,10 @@ namespace Neo.Ledger
                 {
                     snapshot.HeaderHashList.Add(stored_header_count, new HeaderHashList
                     {
-                        Hashes = header_index.Skip((int) stored_header_count).Take(2000).ToArray()
+                        Hashes = header_index.Skip((int)stored_header_count).Take(2000).ToArray()
                     });
                     stored_header_count += 2000;
                 }
-
                 if (snapshot_created) snapshot.Commit();
             }
             finally

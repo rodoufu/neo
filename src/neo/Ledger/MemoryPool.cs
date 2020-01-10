@@ -1,5 +1,4 @@
 using Akka.Actor;
-using Akka.Util.Internal;
 using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
@@ -26,6 +25,9 @@ namespace Neo.Ledger
         private static readonly double MaxMillisecondsToReverifyTxPerIdle = (double)Blockchain.MillisecondsPerBlock / 15;
 
         private readonly NeoContainer container;
+        private Blockchain blockchain => container.Blockchain;
+        private IActorRef blockchainActor => container.BlockchainActor;
+        private IActorRef localNodeActor => container.LocalNodeActor;
 
         //
         /// <summary>
@@ -66,7 +68,7 @@ namespace Neo.Ledger
         /// <summary>
         /// Total maximum capacity of transactions the pool can hold.
         /// </summary>
-        public int Capacity { get; internal set; }
+        public int Capacity { get; }
 
         /// <summary>
         /// Store all verified unsorted transactions' senders' fee currently in the memory pool.
@@ -348,7 +350,7 @@ namespace Neo.Ledger
         }
 
         // Note: this must only be called from a single thread (the Blockchain actor)
-        internal void UpdatePoolForBlockPersisted(Block block, StoreView snapshot, Blockchain blockchain)
+        internal void UpdatePoolForBlockPersisted(Block block, StoreView snapshot)
         {
             bool policyChanged = LoadPolicy(snapshot);
 
@@ -377,7 +379,7 @@ namespace Neo.Ledger
 
                     if (tx.Count > 0)
                     {
-                        container.BlockchainActor.Tell(tx.ToArray(), ActorRefs.NoSender);
+                        blockchainActor.Tell(tx.ToArray(), ActorRefs.NoSender);
                     }
                 }
             }
@@ -447,9 +449,9 @@ namespace Neo.Ledger
 
                         if (item.LastBroadcastTimestamp < rebroadcastCutOffTime)
                         {
-                            container.LocalNodeActor.Tell(
+                            localNodeActor.Tell(
                                 new LocalNode.RelayDirectly { Inventory = item.Tx },
-                                container.BlockchainActor
+                                blockchainActor
                             );
                             item.LastBroadcastTimestamp = DateTime.UtcNow;
                         }
@@ -488,7 +490,7 @@ namespace Neo.Ledger
         /// <param name="maxToVerify">Max transactions to reverify, the value passed can be >=1</param>
         /// <param name="snapshot">The snapshot to use for verifying.</param>
         /// <returns>true if more unsorted messages exist, otherwise false</returns>
-        internal bool ReVerifyTopUnverifiedTransactionsIfNeeded(int maxToVerify, StoreView snapshot, Blockchain blockchain)
+        internal bool ReVerifyTopUnverifiedTransactionsIfNeeded(int maxToVerify, StoreView snapshot)
         {
             if (blockchain.Height < blockchain.HeaderHeight)
                 return false;

@@ -22,14 +22,14 @@ namespace Neo
         /// </summary>
         public static NeoContainer Instance { get; private set; }
 
-        private IContainer _container;
+        private IContainer container;
         private object actorSystemLock = new object();
 
         /// <summary>
         /// The dependency injection container.
         /// It should only be used after all the dependencies are registered.
         /// </summary>
-        public IContainer Container => _container ??= Builder.Build();
+        public IContainer Container => container ??= Builder.Build();
 
         /// <summary>
         /// Container builder.
@@ -103,7 +103,6 @@ namespace Neo
                 );
             }).SingleInstance().Named<IActorRef>(typeof(TaskManager).Name);
 
-//            Builder.RegisterType<ConsensusService>().SingleInstance();
             Builder.Register((c, p) => new ConsensusService(
                 c.Resolve<NeoContainer>(),
                 p.Named<IStore>("store"),
@@ -113,10 +112,17 @@ namespace Neo
             {
                 var actorSystem = c.Resolve<ActorSystem>();
                 return actorSystem.ActorOf(
-                    actorSystem.DI().Props<ConsensusService.ConsensusServiceActor>().WithMailbox("consensus-service-mailbox")
+                    actorSystem.DI().Props<ConsensusService.ConsensusServiceActor>()
+                        .WithMailbox("consensus-service-mailbox")
                 );
             }).SingleInstance().Named<IActorRef>(typeof(ConsensusService).Name);
-//
+
+            Builder.Register((c, p) => new ConsensusContext(
+                c.Resolve<NeoContainer>(),
+                p.Named<Wallet>("wallet"),
+                p.Named<IStore>("store")
+            )).As<ConsensusContext>();
+
 //            // ProtocolHandler
 //            Builder.RegisterType<ProtocolHandler>().AsSelf();
 //            Register<ProtocolHandler, ProtocolHandlerProps>(Builder, "protocol-handler-mailbox");
@@ -138,63 +144,45 @@ namespace Neo
 //            )).SingleInstance().As<NeoSystem>();
         }
 
-        /// <summary>
-        /// Register the actor and the correspondent class.
-        /// </summary>
-        /// <param name="builder">Container builder.</param>
-        /// <param name="mailBox">Mailbox for the user.</param>
-        /// <param name="singleInstance">Indicate if the instance should be singleton.</param>
-        /// <typeparam name="T1">Class for the actor.</typeparam>
-        /// <typeparam name="T2">The actor.</typeparam>
-        private static void Register<T1, T2>(ContainerBuilder builder, string mailBox = null,
-            bool singleInstance = false)
-            where T1 : ActorBase
-        {
-            var registration = builder.Register(c =>
-            {
-                var actorSystem = c.Resolve<ActorSystem>();
-                var props = actorSystem.DI().Props<T1>();
-                if (!string.IsNullOrEmpty(mailBox))
-                {
-                    props = props.WithMailbox(mailBox);
-                }
-
-                return actorSystem.ActorOf(props);
-            });
-            if (singleInstance)
-            {
-                registration.SingleInstance();
-            }
-
-            registration.As<T2>();
-        }
-
-        /// <summary>
-        /// Should be used only after the NeoContainer is created.
-        /// </summary>
-        public Blockchain Blockchain => Container.Resolve<Blockchain>();
-
-        public RemoteNodeProps ResolveNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
-        {
-            var remoteNode = Container.Resolve<RemoteNode>();
-            remoteNode.SetConnection(connection);
-            remoteNode.Remote = remote;
-            remoteNode.Local = local;
-            return (RemoteNodeProps) Props.Create(() => remoteNode).WithMailbox("remote-node-mailbox");
-        }
-
-        public NeoSystem ResolveNeoSystem(IStore store) =>
-            Container.Resolve<NeoSystem>(new NamedParameter("store", store));
+        public MemoryPool ResolveMemoryPool(int capacity = 100) =>
+            Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
 
         public Blockchain ResolveBlockchain(MemoryPool memoryPool, IStore store) => Container.Resolve<Blockchain>(
             new NamedParameter("memoryPool", memoryPool),
             new NamedParameter("store", store)
         );
 
-        public MemoryPool ResolveMemoryPool(int capacity = 100) =>
-            Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
+        /// <summary>
+        /// Should be used only after the NeoContainer is created.
+        /// </summary>
+        internal Blockchain Blockchain => Container.Resolve<Blockchain>();
 
-        public LocalNode LocalNode => Container.Resolve<LocalNode>();
+        public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store) =>
+            Container.ResolveNamed<IActorRef>(
+                typeof(Blockchain).Name,
+                new NamedParameter("memoryPool", memoryPool),
+                new NamedParameter("store", store)
+            );
+
+        public IActorRef BlockchainActor => Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
+
+        public RemoteNodeProps ResolveNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
+        {
+//        public RemoteNode(object connection, IPEndPoint remote, IPEndPoint local, NeoContainer neoContainer)
+            var remoteNode = Container.Resolve<RemoteNode>();
+            // TODO register and fix me
+//            remoteNode.SetConnection(connection);
+//            remoteNode.Remote = remote;
+//            remoteNode.Local = local;
+            return (RemoteNodeProps) Props.Create(() => remoteNode).WithMailbox("remote-node-mailbox");
+        }
+
+        public NeoSystem ResolveNeoSystem(IStore store) =>
+            Container.Resolve<NeoSystem>(new NamedParameter("store", store));
+
+        public NeoSystem NeoSystem => Container.Resolve<NeoSystem>();
+
+        internal LocalNode LocalNode => Container.Resolve<LocalNode>();
 
         public IActorRef LocalNodeActor => Container.ResolveNamed<IActorRef>(typeof(LocalNode).Name);
 
@@ -206,15 +194,14 @@ namespace Neo
 
         public IActorRef ConsensusServiceActor => Container.ResolveNamed<IActorRef>(typeof(ConsensusService).Name);
 
-        public IActorRef TaskManagerActor => Container.ResolveNamed<IActorRef>(typeof(TaskManager).Name);
-
-        public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store) =>
-            Container.ResolveNamed<IActorRef>(
-                typeof(Blockchain).Name,
-                new NamedParameter("memoryPool", memoryPool),
-                new NamedParameter("store", store)
+        internal ConsensusContext ResolveConsensusContext(IStore store, Wallet wallet) =>
+            Container.Resolve<ConsensusContext>(
+                new NamedParameter("store", store),
+                new NamedParameter("wallet", wallet)
             );
 
-        public IActorRef BlockchainActor => Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
+        public IActorRef TaskManagerActor => Container.ResolveNamed<IActorRef>(typeof(TaskManager).Name);
+
+        public ActorSystem ActorSystem => Container.Resolve<ActorSystem>();
     }
 }
