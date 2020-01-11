@@ -208,6 +208,7 @@ namespace Neo.Wallets
             return account;
         }
 
+        // TODO Maybe change the interface to accpet a blockchain object as weel
         public Transaction MakeTransaction(TransferOutput[] outputs, UInt160 from = null)
         {
             UInt160[] accounts;
@@ -277,6 +278,7 @@ namespace Neo.Wallets
             }
         }
 
+        // TODO Maybe change the interface to accpet a blockchain object as weel
         public Transaction MakeTransaction(byte[] script, UInt160 sender = null, TransactionAttribute[] attributes = null, Cosigner[] cosigners = null)
         {
             UInt160[] accounts;

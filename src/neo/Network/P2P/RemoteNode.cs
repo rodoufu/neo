@@ -4,7 +4,6 @@ using Akka.IO;
 using Neo.Cryptography;
 using Neo.IO;
 using Neo.IO.Actors;
-using Neo.Ledger;
 using Neo.Network.P2P.Capabilities;
 using Neo.Network.P2P.Payloads;
 using System.Collections.Generic;
@@ -31,17 +30,17 @@ namespace Neo.Network.P2P
         public bool IsFullNode { get; private set; } = false;
 
         private readonly NeoContainer neoContainer;
-        private LocalNode localNode => neoContainer.LocalNode;
+        private readonly LocalNode localNode;
+        private readonly IActorRef protocol;
         private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
-        private IActorRef protocol;
 
-        public RemoteNode(object connection, IPEndPoint remote, IPEndPoint local, NeoContainer neoContainer)
+        public RemoteNode(object connection, IPEndPoint remote, IPEndPoint local, NeoContainer neoContainer,
+            LocalNode localNode)
             : base(connection, remote, local)
         {
             this.neoContainer = neoContainer;
-            // TODO rodoufu solve this
-//            this.protocol = Context.ActorOf(ProtocolHandler.Props(system));
-//            LocalNode.Singleton.RemoteNodes.TryAdd(Self, this);
+            this.localNode = localNode;
+            this.protocol = Context.ActorOf(neoContainer.ProtocolHandlerProps);
             localNode.RemoteNodes.TryAdd(Self, this);
 
             var capabilities = new List<NodeCapability>
@@ -239,11 +238,6 @@ namespace Neo.Network.P2P
             localNode.RemoteNodes.TryRemove(Self, out _);
             base.PostStop();
         }
-
-//        internal static Props Props(NeoSystem system, object connection, IPEndPoint remote, IPEndPoint local)
-//        {
-//            return Akka.Actor.Props.Create(() => new RemoteNode(system, connection, remote, local)).WithMailbox("remote-node-mailbox");
-//        }
 
         private void SendMessage(Message message)
         {

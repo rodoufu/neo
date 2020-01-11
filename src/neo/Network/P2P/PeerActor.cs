@@ -19,7 +19,7 @@ namespace Neo.Network.P2P
     {
         public abstract class PeerActor : UntypedActor
         {
-            private Peer peer;
+            private readonly Peer peer;
             private static readonly IActorRef tcp_manager = Context.System.Tcp();
             protected ActorSelection Connections => Context.ActorSelection("connection_*");
 

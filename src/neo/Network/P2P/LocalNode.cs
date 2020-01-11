@@ -102,6 +102,6 @@ namespace Neo.Network.P2P
         }
 
         protected override Props ProtocolProps(object connection, IPEndPoint remote, IPEndPoint local) =>
-            neoContainer.ResolveNodeProps(connection, remote, local);
+            neoContainer.ResolveRemoteNodeProps(connection, remote, local);
     }
 }

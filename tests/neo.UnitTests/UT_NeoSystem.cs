@@ -1,10 +1,8 @@
 using Akka.Actor;
 using Autofac;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neo.Network.P2P;
 using Neo.Persistence;
 using NSubstitute;
-using FluentAssertions;
 using Neo.Ledger;
 using Neo.UnitTests.Wallets;
 
@@ -65,6 +63,20 @@ namespace Neo.UnitTests
 
             var blockchainActor = container.BlockchainActor;
             Assert.IsNotNull(blockchainActor);
+        }
+
+        [TestMethod]
+        public void CreatingNeoSystem()
+        {
+            var neoSystem = container.ResolveNeoSystem(store);
+            Assert.IsNotNull(neoSystem);
+        }
+
+        [TestMethod]
+        public void CreatingProtocolHandlerActor()
+        {
+            var protocolHandler = container.ProtocolHandlerActor;
+            Assert.IsNotNull(protocolHandler);
         }
 
         [TestMethod]

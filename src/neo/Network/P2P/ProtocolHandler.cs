@@ -42,15 +42,16 @@ namespace Neo.Network.P2P
         private readonly ICancelable timer = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimerInterval, TimerInterval, Context.Self, new Timer(), ActorRefs.NoSender);
 
         private readonly NeoContainer neoContainer;
+        private readonly Blockchain blockchain;
         private IActorRef taskManagerActor => neoContainer.TaskManagerActor;
         private IActorRef localNodeActor => neoContainer.LocalNodeActor;
         private LocalNode localNode => neoContainer.LocalNode;
-        private Blockchain blockchain => neoContainer.Blockchain;
         private IActorRef blockchainActor => neoContainer.BlockchainActor;
 
-        public ProtocolHandler(NeoContainer neoContainer)
+        public ProtocolHandler(NeoContainer neoContainer, Blockchain blockchain)
         {
             this.neoContainer = neoContainer;
+            this.blockchain = blockchain;
             this.pendingKnownHashes = new PendingKnownHashesCollection();
             this.knownHashes = new HashSetCache<UInt256>(blockchain.MemPool.Capacity * 2 / 5);
             this.sentHashes = new HashSetCache<UInt256>(blockchain.MemPool.Capacity * 2 / 5);
@@ -398,10 +399,6 @@ namespace Neo.Network.P2P
             }
         }
 
-//        public static Props Props(NeoSystem system)
-//        {
-//            return Akka.Actor.Props.Create(() => new ProtocolHandler(system)).WithMailbox("protocol-handler-mailbox");
-//        }
     }
 
     internal class ProtocolHandlerMailbox : PriorityMailbox

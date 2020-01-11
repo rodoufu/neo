@@ -64,6 +64,11 @@ namespace Neo
                 var propsResolver = new AutoFacDependencyResolver(Container, h.Instance);
             }).SingleInstance().As<ActorSystem>();
 
+            Builder.Register((c, p) => new NeoSystem(
+                c.Resolve<NeoContainer>(),
+                p.Named<IStore>("store")
+            )).As<NeoSystem>();
+
             Builder.Register((c, p) => new MemoryPool(
                 c.Resolve<NeoContainer>(),
                 p.Named<int>("capacity")
@@ -123,25 +128,30 @@ namespace Neo
                 p.Named<IStore>("store")
             )).As<ConsensusContext>();
 
-//            // ProtocolHandler
-//            Builder.RegisterType<ProtocolHandler>().AsSelf();
-//            Register<ProtocolHandler, ProtocolHandlerProps>(Builder, "protocol-handler-mailbox");
-//
-//            Builder.Register((c, p) => new RpcServer(
-//                c.Resolve<Blockchain>(),
-//                c.Resolve<BlockchainActor>(),
-//                c.Resolve<LocalNode>(),
-//                p.Named<Wallet>("wallet"),
-//                p.Named<long>("maxGasInvoke")
-//            )).As<RpcServer>();
-//
-//            Builder.Register((c, p) => new NeoSystem(
-//                c.Resolve<LocalNodeActor>(),
-//                c.Resolve<ConsensusServiceActor>(),
-//                c.Resolve<RpcServer>(),
-//                c.Resolve<BlockchainActor>(),
-//                p.Named<Store>("store")
-//            )).SingleInstance().As<NeoSystem>();
+            Builder.RegisterType<ProtocolHandler>();
+            Builder.Register((c, p) =>
+            {
+                var actorSystem = c.Resolve<ActorSystem>();
+                return actorSystem.ActorOf(
+                    actorSystem.DI().Props<ProtocolHandler>()
+                        .WithMailbox("protocol-handler-mailbox")
+                );
+            }).SingleInstance().Named<IActorRef>(typeof(ProtocolHandler).Name);
+            Builder.Register((c, p) =>
+                    Props.Create(() => c.Resolve<ProtocolHandler>(p)).WithMailbox("protocol-handler-mailbox"))
+                .Named<Props>(typeof(RemoteNode).Name);
+
+            Builder.Register((c, p) => new RemoteNode(
+                p.Named<object>("connection"),
+                p.Named<IPEndPoint>("remote"),
+                p.Named<IPEndPoint>("local"),
+                c.Resolve<NeoContainer>(),
+                c.Resolve<LocalNode>()
+            )).As<RemoteNode>();
+            Builder.Register((c, p) =>
+                    Props.Create(() => c.Resolve<RemoteNode>(p)).WithMailbox("remote-node-mailbox"))
+                .Named<Props>(typeof(RemoteNode).Name);
+
         }
 
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
@@ -166,16 +176,14 @@ namespace Neo
 
         public IActorRef BlockchainActor => Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
 
-        public RemoteNodeProps ResolveNodeProps(object connection, IPEndPoint remote, IPEndPoint local)
-        {
-//        public RemoteNode(object connection, IPEndPoint remote, IPEndPoint local, NeoContainer neoContainer)
-            var remoteNode = Container.Resolve<RemoteNode>();
-            // TODO register and fix me
-//            remoteNode.SetConnection(connection);
-//            remoteNode.Remote = remote;
-//            remoteNode.Local = local;
-            return (RemoteNodeProps) Props.Create(() => remoteNode).WithMailbox("remote-node-mailbox");
-        }
+        public Props ResolveRemoteNodeProps(object connection, IPEndPoint remote, IPEndPoint local) =>
+            Container.ResolveNamed<Props>(
+                typeof(RemoteNode).Name,
+                new NamedParameter("connection", connection),
+                new NamedParameter("remote", remote),
+                new NamedParameter("local", local));
+
+        public Props ProtocolHandlerProps => Container.ResolveNamed<Props>(typeof(ProtocolHandler).Name);
 
         public NeoSystem ResolveNeoSystem(IStore store) =>
             Container.Resolve<NeoSystem>(new NamedParameter("store", store));
@@ -203,5 +211,7 @@ namespace Neo
         public IActorRef TaskManagerActor => Container.ResolveNamed<IActorRef>(typeof(TaskManager).Name);
 
         public ActorSystem ActorSystem => Container.Resolve<ActorSystem>();
+
+        public IActorRef ProtocolHandlerActor => Container.ResolveNamed<IActorRef>(typeof(ProtocolHandler).Name);
     }
 }

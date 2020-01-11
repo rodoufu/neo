@@ -120,7 +120,7 @@ namespace Neo.Network.P2P
             private void OnSendDirectly(IInventory inventory) => localNode.SendToRemoteNodes(inventory);
 
             protected override Props ProtocolProps(object connection, IPEndPoint remote, IPEndPoint local) =>
-                localNode.neoContainer.ResolveNodeProps(connection, remote, local);
+                localNode.neoContainer.ResolveRemoteNodeProps(connection, remote, local);
         }
     }
 }

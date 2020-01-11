@@ -24,6 +24,7 @@ namespace Neo.SmartContract
                 return true;
             }
 
+            // TODO Maybe change the interface to accept a blockchain object as well
             private static bool Blockchain_GetBlock(ApplicationEngine engine)
             {
                 ReadOnlySpan<byte> data = engine.CurrentContext.EvaluationStack.Pop().GetSpan();
@@ -62,6 +63,7 @@ namespace Neo.SmartContract
                 return true;
             }
 
+            // TODO Maybe change the interface to accept a blockchain object as well
             private static bool Blockchain_GetTransactionFromBlock(ApplicationEngine engine)
             {
                 ReadOnlySpan<byte> data = engine.CurrentContext.EvaluationStack.Pop().GetSpan();

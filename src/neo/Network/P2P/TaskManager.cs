@@ -40,12 +40,13 @@ namespace Neo.Network.P2P
         private bool HasHeaderTask => globalTasks.ContainsKey(HeaderTaskHash);
 
         private readonly NeoContainer neoContainer;
+        private readonly Blockchain blockchain;
         private IActorRef localNode => neoContainer.LocalNodeActor;
-        private Blockchain blockchain => neoContainer.Blockchain;
 
-        public TaskManager(NeoContainer neoContainer)
+        public TaskManager(NeoContainer neoContainer, Blockchain blockchain)
         {
             this.neoContainer = neoContainer;
+            this.blockchain = blockchain;
             this.knownHashes = new HashSetCache<UInt256>(blockchain.MemPool.Capacity * 2 / 5);
         }
 
@@ -217,11 +218,6 @@ namespace Neo.Network.P2P
             timer.CancelIfNotNull();
             base.PostStop();
         }
-
-//        public static Props Props(NeoSystem system)
-//        {
-//            return Akka.Actor.Props.Create(() => new TaskManager(system)).WithMailbox("task-manager-mailbox");
-//        }
 
         private void RequestTasks(TaskSession session)
         {
