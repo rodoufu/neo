@@ -47,6 +47,20 @@ namespace Neo.UnitTests
         }
 
         [TestMethod]
+        public void CreatingConsensusServiceActor()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var consensusService = container.ResolveConsensusService(store, new MyWallet());
+            Assert.IsNotNull(consensusService);
+
+            var consensusServiceActor = container.ConsensusServiceActor;
+            Assert.IsNotNull(consensusServiceActor);
+        }
+
+        [TestMethod]
         public void CreatingBlockchain()
         {
             var memoryPool = container.ResolveMemoryPool();
@@ -113,6 +127,31 @@ namespace Neo.UnitTests
         }
 
         [TestMethod]
+        public void CreatingConsensusContext()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var consensusService = container.ResolveConsensusContext(store, new MyWallet());
+            Assert.IsNotNull(consensusService);
+        }
+
+        [TestMethod]
+        public void CreatingContractParametersContext()
+        {
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+
+            var localNode = container.LocalNode;
+            Assert.IsNotNull(localNode);
+
+            var contract = container.ContractParametersContext;
+            Assert.IsNotNull(contract);
+        }
+
+        [TestMethod]
         public void Creating()
         {
             var memoryPool = container.ResolveMemoryPool();
@@ -128,7 +167,6 @@ namespace Neo.UnitTests
             var blockchainActor = container.BlockchainActor;
             Assert.IsNotNull(blockchainActor);
 
-            /*
             var taskManagerActor = container.TaskManagerActor;
             Assert.IsNotNull(taskManagerActor);
 
@@ -137,18 +175,6 @@ namespace Neo.UnitTests
 
             var localNodeActor = container.LocalNodeActor;
             Assert.IsNotNull(localNodeActor);
-            */
-
-
-//            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
-//            Assert.IsNotNull(container.BlockchainActor);
-//            Assert.IsNotNull(container.Blockchain);
-//            Assert.IsNotNull(neoSystem);
-//            Assert.IsNotNull(neoSystem.ActorSystem);
-//            Assert.IsNotNull(container.Blockchain);
-//            Assert.IsNotNull(container.ResolveLocalNode());
-
-//            container.ResolveBlockchainActor().Tell("oi", container.ResolveLocalNodeActor());
         }
     }
 }

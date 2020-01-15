@@ -8,6 +8,7 @@ using Neo.Network.P2P;
 using Neo.Persistence;
 using Neo.Wallets;
 using System.Net;
+using Neo.SmartContract;
 
 namespace Neo
 {
@@ -152,6 +153,7 @@ namespace Neo
                     Props.Create(() => c.Resolve<RemoteNode>(p)).WithMailbox("remote-node-mailbox"))
                 .Named<Props>(typeof(RemoteNode).Name);
 
+            Builder.RegisterType<ContractParametersContext>();
         }
 
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
@@ -213,5 +215,7 @@ namespace Neo
         public ActorSystem ActorSystem => Container.Resolve<ActorSystem>();
 
         public IActorRef ProtocolHandlerActor => Container.ResolveNamed<IActorRef>(typeof(ProtocolHandler).Name);
+
+        public ContractParametersContext ContractParametersContext => Container.Resolve<ContractParametersContext>();
     }
 }
