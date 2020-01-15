@@ -32,7 +32,8 @@ namespace Neo.Ledger
                     blockchain.stored_header_count += (uint) blockchain.header_index.Count;
                     if (blockchain.stored_header_count == 0)
                     {
-                        blockchain.header_index.AddRange(blockchain.View.Blocks.Find().OrderBy(p => p.Value.Index).Select(p => p.Key));
+                        blockchain.header_index.AddRange(blockchain.View.Blocks.Find().OrderBy(p => p.Value.Index)
+                            .Select(p => p.Key));
                     }
                     else
                     {
@@ -40,7 +41,8 @@ namespace Neo.Ledger
                         if (hashIndex.Index >= blockchain.stored_header_count)
                         {
                             DataCache<UInt256, TrimmedBlock> cache = blockchain.View.Blocks;
-                            for (UInt256 hash = hashIndex.Hash; hash != blockchain.header_index[(int) blockchain.stored_header_count - 1];)
+                            for (UInt256 hash = hashIndex.Hash;
+                                hash != blockchain.header_index[(int) blockchain.stored_header_count - 1];)
                             {
                                 blockchain.header_index.Insert((int) blockchain.stored_header_count, hash);
                                 hash = cache[hash].PrevHash;
@@ -77,11 +79,12 @@ namespace Neo.Ledger
                         Sender.Tell(OnNewBlock(block));
                         break;
                     case Transaction[] transactions:
-                        {
-                            // This message comes from a mempool's revalidation, already relayed
-                            foreach (var tx in transactions) OnNewTransaction(tx, false);
-                            break;
-                        }
+                    {
+                        // This message comes from a mempool's revalidation, already relayed
+                        foreach (var tx in transactions) OnNewTransaction(tx, false);
+                        break;
+                    }
+
                     case Transaction transaction:
                         OnNewTransaction(transaction, true);
                         break;
@@ -126,7 +129,8 @@ namespace Neo.Ledger
                     snapshot.PersistingBlock = block;
                     if (block.Index > 0)
                     {
-                        using (ApplicationEngine engine = new ApplicationEngine(TriggerType.System, null, snapshot, 0, true))
+                        using (ApplicationEngine engine =
+                            new ApplicationEngine(TriggerType.System, null, snapshot, 0, true))
                         {
                             engine.LoadScript(onPersistNativeContractScript);
                             if (engine.Execute() != VMState.HALT) throw new InvalidOperationException();
@@ -135,6 +139,7 @@ namespace Neo.Ledger
                             all_application_executed.Add(application_executed);
                         }
                     }
+
                     snapshot.Blocks.Add(block.Hash, block.Trim());
                     foreach (Transaction tx in block.Transactions)
                     {
@@ -146,7 +151,8 @@ namespace Neo.Ledger
 
                         snapshot.Transactions.Add(tx.Hash, state);
 
-                        using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, tx, snapshot.Clone(), tx.SystemFee))
+                        using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, tx,
+                            snapshot.Clone(), tx.SystemFee))
                         {
                             engine.LoadScript(tx.Script);
                             state.VMState = engine.Execute();
@@ -154,17 +160,20 @@ namespace Neo.Ledger
                             {
                                 engine.Snapshot.Commit();
                             }
+
                             ApplicationExecuted application_executed = new ApplicationExecuted(engine);
                             Context.System.EventStream.Publish(application_executed);
                             all_application_executed.Add(application_executed);
                         }
                     }
+
                     snapshot.BlockHashIndex.GetAndChange().Set(block);
                     if (block.Index == blockchain.header_index.Count)
                     {
                         blockchain.header_index.Add(block.Hash);
                         snapshot.HeaderHashIndex.GetAndChange().Set(block);
                     }
+
                     foreach (IPersistencePlugin plugin in Plugin.PersistencePlugins)
                         plugin.OnPersist(snapshot, all_application_executed);
                     snapshot.Commit();
@@ -186,8 +195,10 @@ namespace Neo.Ledger
                             }
                         }
                     }
+
                     if (commitExceptions != null) throw new AggregateException(commitExceptions);
                 }
+
                 blockchain.UpdateCurrentSnapshot();
                 OnPersistCompleted(block);
             }
@@ -214,7 +225,8 @@ namespace Neo.Ledger
                     // First remove the tx if it is unverified in the pool.
                     blockchain.MemPool.TryRemoveUnVerified(tx.Hash, out _);
                     // Verify the the transaction
-                    if (tx.Verify(blockchain.currentSnapshot, blockchain.MemPool.SendersFeeMonitor.GetSenderFee(tx.Sender)) != RelayResultReason.Succeed)
+                    if (tx.Verify(blockchain.currentSnapshot, blockchain.MemPool.SendersFeeMonitor.GetSenderFee(tx.Sender)) !=
+                        RelayResultReason.Succeed)
                         continue;
                     // Add to the memory pool
                     blockchain.MemPool.TryAdd(tx.Hash, tx);
@@ -238,9 +250,11 @@ namespace Neo.Ledger
                         snapshot.HeaderHashIndex.GetAndChange().Hash = header.Hash;
                         snapshot.HeaderHashIndex.GetAndChange().Index = header.Index;
                     }
+
                     blockchain.SaveHeaderHashList(snapshot);
                     snapshot.Commit();
                 }
+
                 blockchain.UpdateCurrentSnapshot();
                 blockchain.taskManagerActor.Tell(new TaskManager.HeaderTaskCompleted(), Sender);
             }
@@ -256,6 +270,7 @@ namespace Neo.Ledger
                     blockchain.AddUnverifiedBlockToCache(block);
                     return RelayResultReason.UnableToVerify;
                 }
+
                 if (block.Index == blockchain.header_index.Count)
                 {
                     if (!block.Verify(blockchain.currentSnapshot))
@@ -263,9 +278,10 @@ namespace Neo.Ledger
                 }
                 else
                 {
-                    if (!block.Hash.Equals(blockchain.header_index[(int)block.Index]))
+                    if (!block.Hash.Equals(blockchain.header_index[(int) block.Index]))
                         return RelayResultReason.Invalid;
                 }
+
                 if (block.Index == blockchain.Height + 1)
                 {
                     Block block_persist = block;
@@ -274,7 +290,7 @@ namespace Neo.Ledger
                     {
                         blocksToPersistList.Add(block_persist);
                         if (block_persist.Index + 1 >= blockchain.header_index.Count) break;
-                        UInt256 hash = blockchain.header_index[(int)block_persist.Index + 1];
+                        UInt256 hash = blockchain.header_index[(int) block_persist.Index + 1];
                         if (!blockchain.block_cache.TryGetValue(hash, out block_persist)) break;
                     }
 
@@ -292,8 +308,9 @@ namespace Neo.Ledger
                         // Increase in the rate of 1 block per second in configurations with faster blocks
 
                         if (blockToPersist.Index + 100 >= blockchain.header_index.Count)
-                            blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = blockToPersist });
+                            blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly {Inventory = blockToPersist});
                     }
+
                     blockchain.SaveHeaderHashList();
 
                     if (blockchain.block_cache_unverified.TryGetValue(blockchain.Height + 1, out LinkedList<Block> unverifiedBlocks))
@@ -307,7 +324,7 @@ namespace Neo.Ledger
                 {
                     blockchain.block_cache.Add(block.Hash, block);
                     if (block.Index + 100 >= blockchain.header_index.Count)
-                        blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = block });
+                        blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly {Inventory = block});
                     if (block.Index == blockchain.header_index.Count)
                     {
                         blockchain.header_index.Add(block.Hash);
@@ -318,9 +335,11 @@ namespace Neo.Ledger
                             blockchain.SaveHeaderHashList(snapshot);
                             snapshot.Commit();
                         }
+
                         blockchain.UpdateCurrentSnapshot();
                     }
                 }
+
                 return RelayResultReason.Succeed;
             }
 
@@ -332,14 +351,18 @@ namespace Neo.Ledger
                 else if (!blockchain.MemPool.CanTransactionFitInPool(transaction))
                     reason = RelayResultReason.OutOfMemory;
                 else
-                    reason = transaction.VerifyForEachBlock(blockchain.currentSnapshot, blockchain.MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
+                    reason = transaction.VerifyForEachBlock(blockchain.currentSnapshot,
+                        blockchain.MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
                 if (reason == RelayResultReason.Succeed)
                 {
-                    Task.Run(() => new ParallelVerified
+                    Task.Run(() =>
                     {
-                        Transaction = transaction,
-                        ShouldRelay = relay,
-                        VerifyResult = transaction.VerifyParallelParts(blockchain.currentSnapshot)
+                        return new ParallelVerified
+                        {
+                            Transaction = transaction,
+                            ShouldRelay = relay,
+                            VerifyResult = transaction.VerifyParallelParts(blockchain.currentSnapshot)
+                        };
                     }).PipeTo(Self, Sender);
                 }
                 else
@@ -353,7 +376,7 @@ namespace Neo.Ledger
                 if (!payload.Verify(blockchain.currentSnapshot)) return RelayResultReason.Invalid;
                 blockchain.consensusServiceActor?.Tell(payload);
                 blockchain.ConsensusRelayCache.Add(payload);
-                blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = payload });
+                blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly {Inventory = payload});
                 return RelayResultReason.Succeed;
             }
 
@@ -362,13 +385,16 @@ namespace Neo.Ledger
                 RelayResultReason reason = parallelVerified.VerifyResult;
                 if (reason == RelayResultReason.Succeed)
                 {
-                    if (!blockchain.MemPool.CanTransactionFitInPool(parallelVerified.Transaction))
+                    if (blockchain.View.ContainsTransaction(parallelVerified.Transaction.Hash))
+                        reason = RelayResultReason.AlreadyExists;
+                    else if (!blockchain.MemPool.CanTransactionFitInPool(parallelVerified.Transaction))
                         reason = RelayResultReason.OutOfMemory;
                     else if (!blockchain.MemPool.TryAdd(parallelVerified.Transaction.Hash, parallelVerified.Transaction))
                         reason = RelayResultReason.OutOfMemory;
                     else if (parallelVerified.ShouldRelay)
-                        blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = parallelVerified.Transaction });
+                        blockchain.localNodeActor.Tell(new LocalNode.RelayDirectly {Inventory = parallelVerified.Transaction});
                 }
+
                 Sender.Tell(reason);
             }
         }

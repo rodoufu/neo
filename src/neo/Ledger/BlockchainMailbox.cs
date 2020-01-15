@@ -9,12 +9,12 @@ namespace Neo.Ledger
     {
         internal class BlockchainMailbox : PriorityMailbox
         {
-            public BlockchainMailbox(Settings settings, Config config)
+            public BlockchainMailbox(Akka.Actor.Settings settings, Config config)
                 : base(settings, config)
             {
             }
 
-            protected internal override bool IsHighPriority(object message)
+            internal protected override bool IsHighPriority(object message)
             {
                 switch (message)
                 {
