@@ -1,8 +1,10 @@
 using Akka.Actor;
 using Neo.Cryptography.ECC;
 using Neo.IO.Caching;
+using Neo.Network.P2P;
 using Neo.Network.P2P.Payloads;
 using Neo.Persistence;
+using Neo.Plugins;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using Neo.VM;
@@ -10,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Neo.Ledger
 {
@@ -192,6 +195,19 @@ namespace Neo.Ledger
             return View.GetTransaction(hash);
         }
 
+        private void OnImport(IEnumerable<Block> blocks, IActorRef sender, IUntypedActorContext context)
+        {
+            foreach (Block block in blocks)
+            {
+                if (block.Index <= Height) continue;
+                if (block.Index != Height + 1)
+                    throw new InvalidOperationException();
+                Persist(block, context);
+                SaveHeaderHashList();
+            }
+            sender.Tell(new ImportCompleted());
+        }
+
         private void AddUnverifiedBlockToCache(Block block)
         {
             if (!block_cache_unverified.TryGetValue(block.Index, out LinkedList<Block> blocks))
@@ -201,6 +217,265 @@ namespace Neo.Ledger
             }
 
             blocks.AddLast(block);
+        }
+
+        private void OnFillMemoryPool(IEnumerable<Transaction> transactions, IActorRef sender)
+        {
+            // Invalidate all the transactions in the memory pool, to avoid any failures when adding new transactions.
+            MemPool.InvalidateAllTransactions();
+
+            // Add the transactions to the memory pool
+            foreach (var tx in transactions)
+            {
+                if (View.ContainsTransaction(tx.Hash))
+                    continue;
+                if (!NativeContract.Policy.CheckPolicy(tx, currentSnapshot))
+                    continue;
+                // First remove the tx if it is unverified in the pool.
+                MemPool.TryRemoveUnVerified(tx.Hash, out _);
+                // Verify the the transaction
+                if (tx.Verify(currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(tx.Sender)) != RelayResultReason.Succeed)
+                    continue;
+                // Add to the memory pool
+                MemPool.TryAdd(tx.Hash, tx);
+            }
+            // Transactions originally in the pool will automatically be reverified based on their priority.
+
+            sender.Tell(new FillCompleted());
+        }
+
+        private RelayResultReason OnNewBlock(Block block, IActorRef self, IUntypedActorContext context)
+        {
+            if (block.Index <= Height)
+                return RelayResultReason.AlreadyExists;
+            if (block_cache.ContainsKey(block.Hash))
+                return RelayResultReason.AlreadyExists;
+            if (block.Index - 1 >= header_index.Count)
+            {
+                AddUnverifiedBlockToCache(block);
+                return RelayResultReason.UnableToVerify;
+            }
+            if (block.Index == header_index.Count)
+            {
+                if (!block.Verify(currentSnapshot))
+                    return RelayResultReason.Invalid;
+            }
+            else
+            {
+                if (!block.Hash.Equals(header_index[(int)block.Index]))
+                    return RelayResultReason.Invalid;
+            }
+            if (block.Index == Height + 1)
+            {
+                Block block_persist = block;
+                List<Block> blocksToPersistList = new List<Block>();
+                while (true)
+                {
+                    blocksToPersistList.Add(block_persist);
+                    if (block_persist.Index + 1 >= header_index.Count) break;
+                    UInt256 hash = header_index[(int)block_persist.Index + 1];
+                    if (!block_cache.TryGetValue(hash, out block_persist)) break;
+                }
+
+                int blocksPersisted = 0;
+                foreach (Block blockToPersist in blocksToPersistList)
+                {
+                    block_cache_unverified.Remove(blockToPersist.Index);
+                    Persist(blockToPersist, context);
+
+                    // 15000 is the default among of seconds per block, while MilliSecondsPerBlock is the current
+                    uint extraBlocks = (15000 - MillisecondsPerBlock) / 1000;
+
+                    if (blocksPersisted++ < blocksToPersistList.Count - (2 + Math.Max(0, extraBlocks))) continue;
+                    // Empirically calibrated for relaying the most recent 2 blocks persisted with 15s network
+                    // Increase in the rate of 1 block per second in configurations with faster blocks
+
+                    if (blockToPersist.Index + 100 >= header_index.Count)
+                        localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = blockToPersist });
+                }
+                SaveHeaderHashList();
+
+                if (block_cache_unverified.TryGetValue(Height + 1, out LinkedList<Block> unverifiedBlocks))
+                {
+                    foreach (var unverifiedBlock in unverifiedBlocks)
+                        self.Tell(unverifiedBlock, ActorRefs.NoSender);
+                    block_cache_unverified.Remove(Height + 1);
+                }
+            }
+            else
+            {
+                block_cache.Add(block.Hash, block);
+                if (block.Index + 100 >= header_index.Count)
+                    localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = block });
+                if (block.Index == header_index.Count)
+                {
+                    header_index.Add(block.Hash);
+                    using (SnapshotView snapshot = GetSnapshot())
+                    {
+                        snapshot.Blocks.Add(block.Hash, block.Header.Trim());
+                        snapshot.HeaderHashIndex.GetAndChange().Set(block);
+                        SaveHeaderHashList(snapshot);
+                        snapshot.Commit();
+                    }
+                    UpdateCurrentSnapshot();
+                }
+            }
+            return RelayResultReason.Succeed;
+        }
+
+        private RelayResultReason OnNewConsensus(ConsensusPayload payload)
+        {
+            if (!payload.Verify(currentSnapshot)) return RelayResultReason.Invalid;
+            consensusServiceActor?.Tell(payload);
+            ConsensusRelayCache.Add(payload);
+            localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = payload });
+            return RelayResultReason.Succeed;
+        }
+
+        private void OnNewHeaders(Header[] headers, IActorRef sender)
+        {
+            using (SnapshotView snapshot = GetSnapshot())
+            {
+                foreach (Header header in headers)
+                {
+                    if (header.Index - 1 >= header_index.Count) break;
+                    if (header.Index < header_index.Count) continue;
+                    if (!header.Verify(snapshot)) break;
+                    header_index.Add(header.Hash);
+                    snapshot.Blocks.Add(header.Hash, header.Trim());
+                    snapshot.HeaderHashIndex.GetAndChange().Hash = header.Hash;
+                    snapshot.HeaderHashIndex.GetAndChange().Index = header.Index;
+                }
+                SaveHeaderHashList(snapshot);
+                snapshot.Commit();
+            }
+            UpdateCurrentSnapshot();
+            taskManagerActor.Tell(new TaskManager.HeaderTaskCompleted(), sender);
+        }
+
+        private void OnNewTransaction(Transaction transaction, bool relay, IActorRef self, IActorRef sender)
+        {
+            RelayResultReason reason;
+            if (ContainsTransaction(transaction.Hash))
+                reason = RelayResultReason.AlreadyExists;
+            else if (!MemPool.CanTransactionFitInPool(transaction))
+                reason = RelayResultReason.OutOfMemory;
+            else
+                reason = transaction.VerifyForEachBlock(currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
+            if (reason == RelayResultReason.Succeed)
+            {
+                Task.Run(() =>
+                {
+                    return new ParallelVerified
+                    {
+                        Transaction = transaction,
+                        ShouldRelay = relay,
+                        VerifyResult = transaction.VerifyParallelParts(currentSnapshot)
+                    };
+                }).PipeTo(self, sender);
+            }
+            else
+            {
+                sender.Tell(reason);
+            }
+        }
+
+        private void OnParallelVerified(ParallelVerified parallelVerified, IActorRef sender)
+        {
+            RelayResultReason reason = parallelVerified.VerifyResult;
+            if (reason == RelayResultReason.Succeed)
+            {
+                if (View.ContainsTransaction(parallelVerified.Transaction.Hash))
+                    reason = RelayResultReason.AlreadyExists;
+                else if (!MemPool.CanTransactionFitInPool(parallelVerified.Transaction))
+                    reason = RelayResultReason.OutOfMemory;
+                else if (!MemPool.TryAdd(parallelVerified.Transaction.Hash, parallelVerified.Transaction))
+                    reason = RelayResultReason.OutOfMemory;
+                else if (parallelVerified.ShouldRelay)
+                    localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = parallelVerified.Transaction });
+            }
+            sender.Tell(reason);
+        }
+
+        private void OnPersistCompleted(Block block, IUntypedActorContext context)
+        {
+            block_cache.Remove(block.Hash);
+            MemPool.UpdatePoolForBlockPersisted(block, currentSnapshot);
+            context.System.EventStream.Publish(new PersistCompleted { Block = block });
+        }
+
+        private void Persist(Block block, IUntypedActorContext context)
+        {
+            using (SnapshotView snapshot = GetSnapshot())
+            {
+                List<ApplicationExecuted> all_application_executed = new List<ApplicationExecuted>();
+                snapshot.PersistingBlock = block;
+                if (block.Index > 0)
+                {
+                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.System, null, snapshot, 0, true))
+                    {
+                        engine.LoadScript(onPersistNativeContractScript);
+                        if (engine.Execute() != VMState.HALT) throw new InvalidOperationException();
+                        ApplicationExecuted application_executed = new ApplicationExecuted(engine);
+                        context.System.EventStream.Publish(application_executed);
+                        all_application_executed.Add(application_executed);
+                    }
+                }
+                snapshot.Blocks.Add(block.Hash, block.Trim());
+                foreach (Transaction tx in block.Transactions)
+                {
+                    var state = new TransactionState
+                    {
+                        BlockIndex = block.Index,
+                        Transaction = tx
+                    };
+
+                    snapshot.Transactions.Add(tx.Hash, state);
+
+                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, tx, snapshot.Clone(), tx.SystemFee))
+                    {
+                        engine.LoadScript(tx.Script);
+                        state.VMState = engine.Execute();
+                        if (state.VMState == VMState.HALT)
+                        {
+                            engine.Snapshot.Commit();
+                        }
+                        ApplicationExecuted application_executed = new ApplicationExecuted(engine);
+                        context.System.EventStream.Publish(application_executed);
+                        all_application_executed.Add(application_executed);
+                    }
+                }
+                snapshot.BlockHashIndex.GetAndChange().Set(block);
+                if (block.Index == header_index.Count)
+                {
+                    header_index.Add(block.Hash);
+                    snapshot.HeaderHashIndex.GetAndChange().Set(block);
+                }
+                foreach (IPersistencePlugin plugin in Plugin.PersistencePlugins)
+                    plugin.OnPersist(snapshot, all_application_executed);
+                snapshot.Commit();
+                List<Exception> commitExceptions = null;
+                foreach (IPersistencePlugin plugin in Plugin.PersistencePlugins)
+                {
+                    try
+                    {
+                        plugin.OnCommit(snapshot);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (plugin.ShouldThrowExceptionFromCommit(ex))
+                        {
+                            if (commitExceptions == null)
+                                commitExceptions = new List<Exception>();
+
+                            commitExceptions.Add(ex);
+                        }
+                    }
+                }
+                if (commitExceptions != null) throw new AggregateException(commitExceptions);
+            }
+            UpdateCurrentSnapshot();
+            OnPersistCompleted(block, context);
         }
 
         private void SaveHeaderHashList(SnapshotView snapshot = null)

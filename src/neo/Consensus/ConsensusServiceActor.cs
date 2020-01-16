@@ -38,7 +38,7 @@ namespace Neo.Consensus
                     switch (message)
                     {
                         case SetViewNumber setView:
-                            InitializeConsensus(setView.ViewNumber);
+                            consensusService.InitializeConsensus(setView.ViewNumber, Self, Context);
                             break;
                         case Timer timer:
                             OnTimer(timer);
@@ -78,44 +78,10 @@ namespace Neo.Consensus
                     }
                 }
 
-                InitializeConsensus(0);
+                consensusService.InitializeConsensus(0, Self, Context);
                 // Issue a ChangeView with NewViewNumber of 0 to request recovery messages on start-up.
                 if (!context.WatchOnly)
                     consensusService.RequestRecovery();
-            }
-
-            private void InitializeConsensus(byte viewNumber)
-            {
-                var context = consensusService.context;
-                context.Reset(viewNumber);
-                if (viewNumber > 0)
-                    consensusService.Log(
-                        $"changeview: view={viewNumber} primary={context.Validators[context.GetPrimaryIndex((byte) (viewNumber - 1u))]}",
-                        LogLevel.Warning);
-                consensusService.Log(
-                    $"initialize: height={context.Block.Index} view={viewNumber} index={context.MyIndex} role={(context.IsPrimary ? "Primary" : context.WatchOnly ? "WatchOnly" : "Backup")}");
-                if (context.WatchOnly) return;
-                if (context.IsPrimary)
-                {
-                    if (consensusService.isRecovering)
-                    {
-                        ChangeTimer(
-                            TimeSpan.FromMilliseconds(Blockchain.MillisecondsPerBlock << (viewNumber + 1)));
-                    }
-                    else
-                    {
-                        TimeSpan span = TimeProvider.Current.UtcNow - consensusService.block_received_time;
-                        if (span >= Blockchain.TimePerBlock)
-                            ChangeTimer(TimeSpan.Zero);
-                        else
-                            ChangeTimer(Blockchain.TimePerBlock - span);
-                    }
-                }
-                else
-                {
-                    ChangeTimer(
-                        TimeSpan.FromMilliseconds(Blockchain.MillisecondsPerBlock << (viewNumber + 1)));
-                }
             }
 
             private void OnTimer(Timer timer)
@@ -229,7 +195,7 @@ namespace Neo.Consensus
                     $"persist block: height={block.Index} hash={block.Hash} tx={block.Transactions.Length}");
                 consensusService.block_received_time = TimeProvider.Current.UtcNow;
                 consensusService.knownHashes.Clear();
-                InitializeConsensus(0);
+                consensusService.InitializeConsensus(0, Self, Context);
             }
 
             private void OnChangeViewReceived(ConsensusPayload payload, ChangeView message)
@@ -523,7 +489,7 @@ namespace Neo.Consensus
                         if (message is null || message.NewViewNumber < viewNumber)
                             consensusService.localNode.Tell(new LocalNode.SendDirectly { Inventory = context.MakeChangeView(ChangeViewReason.ChangeAgreement) });
                     }
-                    InitializeConsensus(viewNumber);
+                    consensusService.InitializeConsensus(viewNumber, Self, Context);
                 }
             }
 

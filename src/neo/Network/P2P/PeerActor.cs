@@ -132,7 +132,7 @@ namespace Neo.Network.P2P
             /// Tries to add a set of peers to the immutable ImmutableHashSet of UnconnectedPeers.
             /// </summary>
             /// <param name="peers">Peers that the method will try to add (union) to (with) UnconnectedPeers.</param>
-            protected void AddPeers(IEnumerable<IPEndPoint> peers)
+            internal void AddPeers(IEnumerable<IPEndPoint> peers)
             {
                 if (peer.UnconnectedPeers.Count < peer.UnconnectedMax)
                 {
