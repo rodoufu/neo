@@ -55,7 +55,7 @@ namespace Neo.Ledger
                 switch (message)
                 {
                     case Import import:
-                        blockchain.OnImport(import.Blocks, Sender, Context);
+                        blockchain.OnImport(import.Blocks, import.Verify, Sender, Context);
                         break;
                     case FillMemoryPool fill:
                         blockchain.OnFillMemoryPool(fill.Transactions, Sender);
