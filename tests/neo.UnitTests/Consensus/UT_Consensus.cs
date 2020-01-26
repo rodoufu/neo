@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
+using Neo.Persistence;
 using ECPoint = Neo.Cryptography.ECC.ECPoint;
 using Neo.SmartContract.Native;
 
@@ -474,9 +475,15 @@ namespace Neo.UnitTests.Consensus
         [TestMethod]
         public void TestSerializeAndDeserializeConsensusContext()
         {
-            var consensusContext = new ConsensusContext(null, null, null)
+            var container = new NeoContainer();
+            var memoryPool = container.ResolveMemoryPool();
+            Assert.IsNotNull(memoryPool);
+            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, new MemoryStore()));
+            Assert.IsNotNull(container.BlockchainActor);
+
+            var consensusContext = container.ResolveConsensusContext(null, null);
             {
-                Block = new Block
+                consensusContext.Block = new Block
                 {
                     PrevHash = Blockchain.GenesisBlock.Hash,
                     Index = 1,
@@ -486,9 +493,9 @@ namespace Neo.UnitTests.Consensus
                     {
                         PrimaryIndex = 6
                     }
-                },
-                ViewNumber = 2,
-                Validators = new ECPoint[7]
+                };
+                consensusContext.ViewNumber = 2;
+                consensusContext.Validators = new ECPoint[7]
                 {
                     ECPoint.Parse("02486fd15702c4490a26703112a5cc1d0923fd697a33406bd5a1c00e0013b09a70", Neo.Cryptography.ECC.ECCurve.Secp256r1),
                     ECPoint.Parse("024c7b7fb6c310fccf1ba33b082519d82964ea93868d676662d4a59ad548df0e7d", Neo.Cryptography.ECC.ECCurve.Secp256r1),
@@ -497,8 +504,8 @@ namespace Neo.UnitTests.Consensus
                     ECPoint.Parse("02df48f60e8f3e01c48ff40b9b7f1310d7a8b2a193188befe1c2e3df740e895093", Neo.Cryptography.ECC.ECCurve.Secp256r1),
                     ECPoint.Parse("03b209fd4f53a7170ea4444e0cb0a6bb6a53c2bd016926989cf85f9b0fba17a70c", Neo.Cryptography.ECC.ECCurve.Secp256r1),
                     ECPoint.Parse("03b8d9d5771d8f513aa0869b9cc8d50986403b78c6da36890638c3d46a5adce04a", Neo.Cryptography.ECC.ECCurve.Secp256r1)
-                },
-                MyIndex = -1
+                };
+                consensusContext.MyIndex = -1;
             };
             var testTx1 = TestUtils.CreateRandomHashTransaction();
             var testTx2 = TestUtils.CreateRandomHashTransaction();
@@ -549,7 +556,8 @@ namespace Neo.UnitTests.Consensus
 
             consensusContext.LastChangeViewPayloads = new ConsensusPayload[consensusContext.Validators.Length];
 
-            var copiedContext = TestUtils.CopyMsgBySerialization(consensusContext, new ConsensusContext(null, null, null));
+            var copiedContext = TestUtils.CopyMsgBySerialization(
+                consensusContext, container.ResolveConsensusContext(null, null));
 
             copiedContext.Block.PrevHash.Should().Be(consensusContext.Block.PrevHash);
             copiedContext.Block.Index.Should().Be(consensusContext.Block.Index);
