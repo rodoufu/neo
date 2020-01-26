@@ -51,7 +51,7 @@ namespace Neo.UnitTests.Ledger
             _unit.VerifiedCount.Should().Be(0);
             _unit.UnVerifiedCount.Should().Be(0);
             _unit.Count.Should().Be(0);
-            _unit2 = TestBlockchain.Container.ResolveMemoryPool(100);
+            _unit2 = TestBlockchain.Container.ResolveMemoryPool(0);
             plugin = new TestIMemoryPoolTxObserverPlugin();
         }
 
