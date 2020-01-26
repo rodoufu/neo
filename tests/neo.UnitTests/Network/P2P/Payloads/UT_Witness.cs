@@ -52,7 +52,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
             // Sign
 
-            var data = new ContractParametersContext(new Transaction()
+            var data = TestBlockchain.Container.ResolveContractParametersContext(new Transaction()
             {
                 Cosigners = new Cosigner[0],
                 Sender = multiSignContract.ScriptHash,

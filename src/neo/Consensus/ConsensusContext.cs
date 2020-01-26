@@ -87,7 +87,7 @@ namespace Neo.Consensus
         {
             EnsureHeader();
             Contract contract = Contract.CreateMultiSigContract(M, Validators);
-            ContractParametersContext sc = new ContractParametersContext(Block);
+            var sc = neoContainer.ResolveContractParametersContext(Block);
             for (int i = 0, j = 0; i < Validators.Length && j < M; i++)
             {
                 if (CommitPayloads[i]?.ConsensusMessage.ViewNumber != ViewNumber) continue;
@@ -200,10 +200,10 @@ namespace Neo.Consensus
 
         private void SignPayload(ConsensusPayload payload)
         {
-            ContractParametersContext sc;
+            var sc = neoContainer.ResolveContractParametersContext();
             try
             {
-                sc = new ContractParametersContext(payload);
+                sc = neoContainer.ResolveContractParametersContext(payload);
                 wallet.Sign(sc);
             }
             catch (InvalidOperationException)

@@ -140,7 +140,7 @@ namespace Neo.UnitTests
             Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
             Assert.IsNotNull(container.Blockchain);
 
-            var consensusService = container.ResolveConsensusContext(store, new MyWallet());
+            var consensusService = container.ResolveConsensusContext(new MyWallet(), store);
             Assert.IsNotNull(consensusService);
         }
 
@@ -155,7 +155,7 @@ namespace Neo.UnitTests
             var localNode = container.LocalNode;
             Assert.IsNotNull(localNode);
 
-            var contract = container.ContractParametersContext;
+            var contract = container.ResolveContractParametersContext();
             Assert.IsNotNull(contract);
         }
 

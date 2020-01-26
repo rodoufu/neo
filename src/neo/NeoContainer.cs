@@ -8,6 +8,7 @@ using Neo.Network.P2P;
 using Neo.Persistence;
 using Neo.Wallets;
 using System.Net;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 
 namespace Neo
@@ -153,7 +154,10 @@ namespace Neo
                     Props.Create(() => c.Resolve<RemoteNode>(p)).WithMailbox("remote-node-mailbox"))
                 .Named<Props>(typeof(RemoteNode).Name);
 
-            Builder.RegisterType<ContractParametersContext>();
+            Builder.Register((c, p) => new ContractParametersContext(
+                c.Resolve<NeoContainer>(),
+                p.Named<IVerifiable>("verifiable")
+            )).As<ContractParametersContext>();
         }
 
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
@@ -189,7 +193,7 @@ namespace Neo
         public NeoSystem ResolveNeoSystem(IStore store) =>
             Container.Resolve<NeoSystem>(new NamedParameter("store", store));
 
-        public NeoSystem NeoSystem => Container.Resolve<NeoSystem>();
+//        public NeoSystem NeoSystem => Container.Resolve<NeoSystem>();
 
         internal LocalNode LocalNode => Container.Resolve<LocalNode>();
 
@@ -203,7 +207,7 @@ namespace Neo
 
         public IActorRef ConsensusServiceActor => Container.ResolveNamed<IActorRef>(typeof(ConsensusService).Name);
 
-        internal ConsensusContext ResolveConsensusContext(IStore store, Wallet wallet) =>
+        internal ConsensusContext ResolveConsensusContext(Wallet wallet, IStore store) =>
             Container.Resolve<ConsensusContext>(
                 new NamedParameter("store", store),
                 new NamedParameter("wallet", wallet)
@@ -215,6 +219,9 @@ namespace Neo
 
         public IActorRef ProtocolHandlerActor => Container.ResolveNamed<IActorRef>(typeof(ProtocolHandler).Name);
 
-        public ContractParametersContext ContractParametersContext => Container.Resolve<ContractParametersContext>();
+        public ContractParametersContext ResolveContractParametersContext(IVerifiable verifiable = null) =>
+            Container.Resolve<ContractParametersContext>(
+                new NamedParameter("verifiable", verifiable)
+            );
     }
 }

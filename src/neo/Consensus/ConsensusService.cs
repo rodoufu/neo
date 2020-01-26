@@ -50,7 +50,7 @@ namespace Neo.Consensus
         public ConsensusService(NeoContainer neoContainer, IStore store, Wallet wallet)
         {
             this.neoContainer = neoContainer;
-            this.context = neoContainer.ResolveConsensusContext(store, wallet);
+            this.context = neoContainer.ResolveConsensusContext(wallet, store);
         }
 
         private bool AddTransaction(Transaction tx, bool verify, IActorRef self, IUntypedActorContext ctx)

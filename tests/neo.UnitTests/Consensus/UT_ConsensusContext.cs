@@ -9,6 +9,7 @@ using Neo.SmartContract.Native;
 using Neo.Wallets;
 using System;
 using System.Linq;
+using Neo.Persistence;
 
 namespace Neo.UnitTests.Consensus
 {
@@ -39,12 +40,11 @@ namespace Neo.UnitTests.Consensus
                 _validatorKeys[x] = new KeyPair(pk);
             }
 
-            // TODO @rodoufu fix this
-//            _context = new ConsensusContext(mockWallet.Object, Blockchain.Singleton.Store)
-//            {
-//                Validators = _validatorKeys.Select(u => u.PublicKey).ToArray()
-//            };
-//            _context.Reset(0);
+            var container = new NeoContainer();
+            Assert.IsNotNull(container.ResolveBlockchainActor(container.ResolveMemoryPool(), new MemoryStore()));
+            _context = container.ResolveConsensusContext(mockWallet.Object, container.Blockchain.Store);
+            _context.Validators = _validatorKeys.Select(u => u.PublicKey).ToArray();
+            _context.Reset(0);
         }
 
         [TestCleanup]

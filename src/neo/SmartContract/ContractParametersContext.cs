@@ -61,11 +61,14 @@ namespace Neo.SmartContract
 
         public readonly IVerifiable Verifiable;
         private readonly Dictionary<UInt160, ContextItem> ContextItems;
-        private readonly Blockchain blockchain;
+        private readonly NeoContainer neoContainer;
+        private Blockchain blockchain => neoContainer.Blockchain;
 
-        public ContractParametersContext(Blockchain blockchain)
+        public ContractParametersContext(NeoContainer neoContainer, IVerifiable verifiable)
         {
-            this.blockchain = blockchain;
+            this.neoContainer = neoContainer;
+            this.Verifiable = verifiable;
+            this.ContextItems = new Dictionary<UInt160, ContextItem>();
         }
 
         public bool Completed
@@ -107,12 +110,6 @@ namespace Neo.SmartContract
                 }
                 return _ScriptHashes;
             }
-        }
-
-        public ContractParametersContext(IVerifiable verifiable)
-        {
-            this.Verifiable = verifiable;
-            this.ContextItems = new Dictionary<UInt160, ContextItem>();
         }
 
         public bool Add(Contract contract, int index, object parameter)
@@ -215,7 +212,7 @@ namespace Neo.SmartContract
             return item;
         }
 
-        public static ContractParametersContext FromJson(JObject json)
+        public static ContractParametersContext FromJson(NeoContainer neoContainer, JObject json)
         {
             var type = typeof(ContractParametersContext).GetTypeInfo().Assembly.GetType(json["type"].AsString());
             if (!typeof(IVerifiable).IsAssignableFrom(type)) throw new FormatException();
@@ -226,7 +223,7 @@ namespace Neo.SmartContract
             {
                 verifiable.DeserializeUnsigned(reader);
             }
-            ContractParametersContext context = new ContractParametersContext(verifiable);
+            ContractParametersContext context = neoContainer.ResolveContractParametersContext(verifiable);
             foreach (var property in json["items"].Properties)
             {
                 context.ContextItems.Add(UInt160.Parse(property.Key), ContextItem.FromJson(property.Value));
@@ -276,9 +273,9 @@ namespace Neo.SmartContract
             return witnesses;
         }
 
-        public static ContractParametersContext Parse(string value)
+        public static ContractParametersContext Parse(NeoContainer neoContainer, string value)
         {
-            return FromJson(JObject.Parse(value));
+            return FromJson(neoContainer, JObject.Parse(value));
         }
 
         public JObject ToJson()

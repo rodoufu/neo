@@ -166,7 +166,7 @@ namespace Neo.UnitTests.Ledger
 
             tx.Nonce = nonce;
 
-            var data = new ContractParametersContext(tx);
+            var data = TestBlockchain.Container.ResolveContractParametersContext(tx);
             Assert.IsTrue(wallet.Sign(data));
             Assert.IsTrue(data.Completed);
 
