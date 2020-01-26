@@ -478,8 +478,7 @@ namespace Neo.UnitTests.Consensus
             var container = new NeoContainer();
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, new MemoryStore()));
-            Assert.IsNotNull(container.BlockchainActor);
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, new MemoryStore()));
 
             var consensusContext = container.ResolveConsensusContext(null, null);
             {

@@ -40,7 +40,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var consensusService = container.ResolveConsensusService(store, new MyWallet());
             Assert.IsNotNull(consensusService);
@@ -51,7 +52,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var consensusService = container.ResolveConsensusService(store, new MyWallet());
             Assert.IsNotNull(consensusService);
@@ -66,7 +68,8 @@ namespace Neo.UnitTests
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
 
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
             container.ResolveConsensusService(store, new MyWallet());
 
             var blockchain = container.Container.Resolve<Blockchain>();
@@ -98,7 +101,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var taskManagerActor = container.TaskManagerActor;
             Assert.IsNotNull(taskManagerActor);
@@ -109,7 +113,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var localNode = container.LocalNode;
             Assert.IsNotNull(localNode);
@@ -120,7 +125,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var localNodeActor = container.LocalNodeActor;
             Assert.IsNotNull(localNodeActor);
@@ -131,7 +137,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var consensusService = container.ResolveConsensusContext(store, new MyWallet());
             Assert.IsNotNull(consensusService);
@@ -142,7 +149,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var localNode = container.LocalNode;
             Assert.IsNotNull(localNode);
@@ -156,7 +164,8 @@ namespace Neo.UnitTests
         {
             var memoryPool = container.ResolveMemoryPool();
             Assert.IsNotNull(memoryPool);
-            Assert.IsNotNull(container.ResolveBlockchain(memoryPool, store));
+            Assert.IsNotNull(container.ResolveBlockchainActor(memoryPool, store));
+            Assert.IsNotNull(container.Blockchain);
 
             var blockchain = container.Container.Resolve<Blockchain>();
             Assert.IsNotNull(blockchain);

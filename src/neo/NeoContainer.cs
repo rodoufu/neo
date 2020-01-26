@@ -159,7 +159,7 @@ namespace Neo
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
             Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
 
-        public Blockchain ResolveBlockchain(MemoryPool memoryPool, IStore store) => Container.Resolve<Blockchain>(
+        private Blockchain ResolveBlockchain(MemoryPool memoryPool, IStore store) => Container.Resolve<Blockchain>(
             new NamedParameter("memoryPool", memoryPool),
             new NamedParameter("store", store)
         );
@@ -169,12 +169,11 @@ namespace Neo
         /// </summary>
         internal Blockchain Blockchain => Container.Resolve<Blockchain>();
 
-        public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store) =>
-            Container.ResolveNamed<IActorRef>(
-                typeof(Blockchain).Name,
-                new NamedParameter("memoryPool", memoryPool),
-                new NamedParameter("store", store)
-            );
+        public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store)
+        {
+            ResolveBlockchain(memoryPool, store);
+            return BlockchainActor;
+        }
 
         public IActorRef BlockchainActor => Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
 
