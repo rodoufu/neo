@@ -13,14 +13,12 @@ namespace Neo.UnitTests
         {
             Container = new NeoContainer();
             var memoryPool = Container.ResolveMemoryPool();
-            Container.ResolveBlockchainActor(memoryPool, new MemoryStore());
+            var blockchainActor = Container.ResolveBlockchainActor(memoryPool, new MemoryStore());
+            var _ = blockchainActor.Path;
 
             Console.WriteLine("initialize NeoSystem");
-            TheNeoSystem = Container.ResolveNeoSystem(Container.Blockchain.Store);
-
             // Ensure that blockchain is loaded
-            // TODO @rodoufu check this
-            var _ = Container.Blockchain.Height;
+            TheNeoSystem = Container.ResolveNeoSystem(Container.Blockchain.Store);
         }
 
         public static void InitializeMockNeoSystem()
