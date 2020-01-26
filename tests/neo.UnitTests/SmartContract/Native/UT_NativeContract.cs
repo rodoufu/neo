@@ -34,49 +34,51 @@ namespace Neo.UnitTests.SmartContract.Native
         [TestMethod]
         public void TestInvoke()
         {
-            // TODO @rodoufu fix this
-//            ApplicationEngine engine1 = new ApplicationEngine(TriggerType.Application, null, Blockchain.Singleton.GetSnapshot(), 0);
-//            TestNativeContract testNativeContract = new TestNativeContract();
-//
-//            ScriptBuilder sb1 = new ScriptBuilder();
-//
-//            sb1.EmitSysCall("null".ToInteropMethodHash());
-//            engine1.LoadScript(sb1.ToArray());
-//            testNativeContract.Invoke(engine1).Should().BeFalse();
-//
-//            ApplicationEngine engine2 = new ApplicationEngine(TriggerType.Application, null, Blockchain.Singleton.GetSnapshot(), 0);
-//
-//            ScriptBuilder sb2 = new ScriptBuilder();
-//            sb2.EmitSysCall("test".ToInteropMethodHash());
-//            engine2.LoadScript(sb2.ToArray());
-//
-//            ByteArray method1 = new ByteArray(System.Text.Encoding.Default.GetBytes("wrongMethod"));
-//            VMArray args1 = new VMArray();
-//            engine2.CurrentContext.EvaluationStack.Push(args1);
-//            engine2.CurrentContext.EvaluationStack.Push(method1);
-//            testNativeContract.Invoke(engine2).Should().BeFalse();
-//
-//            ByteArray method2 = new ByteArray(System.Text.Encoding.Default.GetBytes("onPersist"));
-//            VMArray args2 = new VMArray();
-//            engine2.CurrentContext.EvaluationStack.Push(args2);
-//            engine2.CurrentContext.EvaluationStack.Push(method2);
-//            testNativeContract.Invoke(engine2).Should().BeTrue();
+            ApplicationEngine engine1 = new ApplicationEngine(
+                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            TestNativeContract testNativeContract = new TestNativeContract();
+
+            ScriptBuilder sb1 = new ScriptBuilder();
+
+            sb1.EmitSysCall("null".ToInteropMethodHash());
+            engine1.LoadScript(sb1.ToArray());
+            testNativeContract.Invoke(engine1).Should().BeFalse();
+
+            ApplicationEngine engine2 = new ApplicationEngine(
+                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+
+            ScriptBuilder sb2 = new ScriptBuilder();
+            sb2.EmitSysCall("test".ToInteropMethodHash());
+            engine2.LoadScript(sb2.ToArray());
+
+            ByteArray method1 = new ByteArray(System.Text.Encoding.Default.GetBytes("wrongMethod"));
+            VMArray args1 = new VMArray();
+            engine2.CurrentContext.EvaluationStack.Push(args1);
+            engine2.CurrentContext.EvaluationStack.Push(method1);
+            testNativeContract.Invoke(engine2).Should().BeFalse();
+
+            ByteArray method2 = new ByteArray(System.Text.Encoding.Default.GetBytes("onPersist"));
+            VMArray args2 = new VMArray();
+            engine2.CurrentContext.EvaluationStack.Push(args2);
+            engine2.CurrentContext.EvaluationStack.Push(method2);
+            testNativeContract.Invoke(engine2).Should().BeTrue();
         }
 
         [TestMethod]
         public void TestOnPersistWithArgs()
         {
-            // TODO @rodoufu fix this
-//            ApplicationEngine engine1 = new ApplicationEngine(TriggerType.Application, null, Blockchain.Singleton.GetSnapshot(), 0);
-//            TestNativeContract testNativeContract = new TestNativeContract();
-//            VMArray args = new VMArray();
-//
-//            VM.Types.Boolean result1 = new VM.Types.Boolean(false);
-//            testNativeContract.TestOnPersist(engine1, args).Should().Be(result1);
-//
-//            ApplicationEngine engine2 = new ApplicationEngine(TriggerType.System, null, Blockchain.Singleton.GetSnapshot(), 0);
-//            VM.Types.Boolean result2 = new VM.Types.Boolean(true);
-//            testNativeContract.TestOnPersist(engine2, args).Should().Be(result2);
+            ApplicationEngine engine1 = new ApplicationEngine(
+                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            TestNativeContract testNativeContract = new TestNativeContract();
+            VMArray args = new VMArray();
+
+            VM.Types.Boolean result1 = new VM.Types.Boolean(false);
+            testNativeContract.TestOnPersist(engine1, args).Should().Be(result1);
+
+            ApplicationEngine engine2 = new ApplicationEngine(
+                TriggerType.System, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            VM.Types.Boolean result2 = new VM.Types.Boolean(true);
+            testNativeContract.TestOnPersist(engine2, args).Should().Be(result2);
         }
 
         [TestMethod]
