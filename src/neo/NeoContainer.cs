@@ -141,7 +141,7 @@ namespace Neo
             }).SingleInstance().Named<IActorRef>(typeof(ProtocolHandler).Name);
             Builder.Register((c, p) =>
                     Props.Create(() => c.Resolve<ProtocolHandler>(p)).WithMailbox("protocol-handler-mailbox"))
-                .Named<Props>(typeof(RemoteNode).Name);
+                .Named<Props>(typeof(ProtocolHandler).Name);
 
             Builder.Register((c, p) => new RemoteNode(
                 p.Named<object>("connection"),
