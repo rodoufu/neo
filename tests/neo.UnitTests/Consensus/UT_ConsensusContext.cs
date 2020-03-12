@@ -19,11 +19,13 @@ namespace Neo.UnitTests.Consensus
     {
         ConsensusContext _context;
         KeyPair[] _validatorKeys;
+        private TestBlockchain testBlockchain;
 
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
 
             var rand = new Random();
             var mockWallet = new Mock<Wallet>();

@@ -15,10 +15,12 @@ namespace Neo.UnitTests.Network.P2P.Payloads
     public class UT_Witness
     {
         Witness uut;
+        private TestBlockchain testBlockchain;
 
         [TestInitialize]
         public void TestSetup()
         {
+            testBlockchain = new TestBlockchain();
             uut = new Witness();
         }
 
@@ -52,7 +54,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
             // Sign
 
-            var data = TestBlockchain.Container.ResolveContractParametersContext(new Transaction()
+            var data = testBlockchain.Container.ResolveContractParametersContext(new Transaction()
             {
                 Cosigners = new Cosigner[0],
                 Sender = multiSignContract.ScriptHash,

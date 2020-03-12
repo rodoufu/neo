@@ -9,7 +9,7 @@ namespace Neo.UnitTests.Network.P2P
     [TestClass]
     public class UT_ProtocolHandler : TestKit
     {
-        private NeoSystem testBlockchain;
+        private TestBlockchain testBlockchain;
 
         [TestCleanup]
         public void Cleanup()
@@ -20,6 +20,7 @@ namespace Neo.UnitTests.Network.P2P
         [TestInitialize]
         public void TestSetup()
         {
+            testBlockchain = new TestBlockchain();
             // TODO @rodoufu fix this
 //            testBlockchain = TestBlockchain.InitializeMockNeoSystem();
         }

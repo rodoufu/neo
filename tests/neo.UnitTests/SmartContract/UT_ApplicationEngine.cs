@@ -18,10 +18,13 @@ namespace Neo.UnitTests.SmartContract
         private string message = null;
         private StackItem item = null;
 
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]

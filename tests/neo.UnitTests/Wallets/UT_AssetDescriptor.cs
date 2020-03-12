@@ -9,10 +9,13 @@ namespace Neo.UnitTests.Wallets
     [TestClass]
     public class UT_AssetDescriptor
     {
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]

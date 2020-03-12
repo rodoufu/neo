@@ -20,11 +20,10 @@ namespace Neo.UnitTests.SmartContract
 {
     public partial class UT_InteropService
     {
-
         [TestMethod]
         public void TestCheckSig()
         {
-            var engine = GetEngine(true);
+            var engine = GetEngine(testBlockchain.Container.Blockchain, true);
             IVerifiable iv = engine.ScriptContainer;
             byte[] message = iv.GetHashData();
             byte[] privateKey = { 0x01,0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -48,7 +47,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestCrypto_CheckMultiSig()
         {
-            var engine = GetEngine(true);
+            var engine = GetEngine(testBlockchain.Container.Blockchain, true);
             IVerifiable iv = engine.ScriptContainer;
             byte[] message = iv.GetHashData();
 
@@ -133,7 +132,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestAccount_IsStandard()
         {
-            var engine = GetEngine(false, true);
+            var engine = GetEngine(testBlockchain.Container.Blockchain, false, true);
             var hash = new byte[] { 0x01, 0x01, 0x01 ,0x01, 0x01,
                                     0x01, 0x01, 0x01, 0x01, 0x01,
                                     0x01, 0x01, 0x01, 0x01, 0x01,
@@ -142,7 +141,7 @@ namespace Neo.UnitTests.SmartContract
             InteropService.Invoke(engine, InteropService.Contract.IsStandard).Should().BeTrue();
             engine.CurrentContext.EvaluationStack.Pop().ToBoolean().Should().BeTrue();
 
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var state = TestUtils.GetContract();
             snapshot.Contracts.Add(state.ScriptHash, state);
             engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
@@ -155,7 +154,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestContract_Create()
         {
-            var engine = GetEngine(false, true);
+            var engine = GetEngine(testBlockchain.Container.Blockchain, false, true);
             var script = new byte[1024 * 1024 + 1];
             engine.CurrentContext.EvaluationStack.Push(script);
             InteropService.Invoke(engine, InteropService.Contract.Create).Should().BeFalse();
@@ -176,7 +175,7 @@ namespace Neo.UnitTests.SmartContract
             engine.CurrentContext.EvaluationStack.Push(script);
             InteropService.Invoke(engine, InteropService.Contract.Create).Should().BeTrue();
 
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var state = TestUtils.GetContract();
             snapshot.Contracts.Add(state.ScriptHash, state);
             engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
@@ -189,7 +188,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestContract_Update()
         {
-            var engine = GetEngine(false, true);
+            var engine = GetEngine(testBlockchain.Container.Blockchain, false, true);
             var script = new byte[1024 * 1024 + 1];
             engine.CurrentContext.EvaluationStack.Push(script);
             InteropService.Invoke(engine, InteropService.Contract.Update).Should().BeFalse();
@@ -219,7 +218,7 @@ namespace Neo.UnitTests.SmartContract
                     Signature = signature
                 }
             };
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var state = TestUtils.GetContract();
             state.Manifest.Features = ContractFeatures.HasStorage;
             var storageItem = new StorageItem
@@ -245,7 +244,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestStorage_Find()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var state = TestUtils.GetContract();
             state.Manifest.Features = ContractFeatures.HasStorage;
 
@@ -283,7 +282,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestEnumerator_Create()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -302,7 +301,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestEnumerator_Next()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -318,7 +317,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestEnumerator_Value()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -336,7 +335,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestEnumerator_Concat()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr1 = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -358,7 +357,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestIterator_Create()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -393,7 +392,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestIterator_Key()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -411,7 +410,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestIterator_Keys()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -430,7 +429,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestIterator_Values()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -449,7 +448,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestIterator_Concat()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             var arr1 = new VMArray {
                 new byte[]{ 0x01 },
                 new byte[]{ 0x02 }
@@ -471,7 +470,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestJson_Deserialize()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             engine.CurrentContext.EvaluationStack.Push("1");
             InteropService.Invoke(engine, InteropService.Json.Deserialize).Should().BeTrue();
             var ret = engine.CurrentContext.EvaluationStack.Pop();
@@ -481,7 +480,7 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestJson_Serialize()
         {
-            var engine = GetEngine();
+            var engine = GetEngine(testBlockchain.Container.Blockchain);
             engine.CurrentContext.EvaluationStack.Push(1);
             InteropService.Invoke(engine, InteropService.Json.Serialize).Should().BeTrue();
             var ret = engine.CurrentContext.EvaluationStack.Pop();

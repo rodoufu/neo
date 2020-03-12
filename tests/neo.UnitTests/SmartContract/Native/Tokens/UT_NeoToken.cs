@@ -21,10 +21,13 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
     [TestClass]
     public class UT_NeoToken
     {
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]
@@ -42,7 +45,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_Vote()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             snapshot.PersistingBlock = new Block() { Index = 1000 };
 
             byte[] from = Contract.CreateMultiSigRedeemScript(Blockchain.StandbyValidators.Length / 2 + 1,
@@ -82,7 +85,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_UnclaimedGas()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             snapshot.PersistingBlock = new Block() { Index = 1000 };
 
             byte[] from = Contract.CreateMultiSigRedeemScript(Blockchain.StandbyValidators.Length / 2 + 1,
@@ -100,7 +103,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_RegisterValidator()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
 
             var ret = Check_RegisterValidator(snapshot, new byte[0]);
             ret.State.Should().BeFalse();
@@ -145,7 +148,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_Transfer()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             snapshot.PersistingBlock = new Block() { Index = 1000 };
 
             byte[] from = Contract.CreateMultiSigRedeemScript(Blockchain.StandbyValidators.Length / 2 + 1,
@@ -198,7 +201,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_BalanceOf()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             byte[] account = Contract.CreateMultiSigRedeemScript(Blockchain.StandbyValidators.Length / 2 + 1,
                 Blockchain.StandbyValidators).ToScriptHash().ToArray();
 
@@ -212,7 +215,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_Initialize()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
 
             // StandbyValidators
 
@@ -238,7 +241,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         public void Check_BadScript()
         {
             var engine = new ApplicationEngine(
-                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
 
             var script = new ScriptBuilder();
             script.Emit(OpCode.NOP);
@@ -250,7 +253,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestCalculateBonus()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             StorageKey key = CreateStorageKey(20, UInt160.Zero.ToArray());
             snapshot.Storages.Add(key, new StorageItem
             {
@@ -293,7 +296,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetNextBlockValidators2()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var result = NativeContract.NEO.GetNextBlockValidators(snapshot);
             result.Length.Should().Be(7);
             result[0].ToArray().ToHexString().Should().Be("03b209fd4f53a7170ea4444e0cb0a6bb6a53c2bd016926989cf85f9b0fba17a70c");
@@ -341,7 +344,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetRegisteredValidators2()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var result = NativeContract.NEO.GetRegisteredValidators(snapshot).ToArray();
             result.Length.Should().Be(7);
             result[0].PublicKey.ToArray().ToHexString().Should().Be("02486fd15702c4490a26703112a5cc1d0923fd697a33406bd5a1c00e0013b09a70");
@@ -388,7 +391,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetValidators2()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var result = NativeContract.NEO.GetValidators(snapshot);
             result[0].ToArray().ToHexString().Should().Be("03b209fd4f53a7170ea4444e0cb0a6bb6a53c2bd016926989cf85f9b0fba17a70c");
             result[1].ToArray().ToHexString().Should().Be("02df48f60e8f3e01c48ff40b9b7f1310d7a8b2a193188befe1c2e3df740e895093");
@@ -414,7 +417,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestInitialize()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var engine = new ApplicationEngine(TriggerType.System, null, snapshot, 0, true);
             Action action = () => NativeContract.NEO.Initialize(engine);
             action.Should().Throw<InvalidOperationException>();
@@ -447,14 +450,14 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestTotalSupply()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             NativeContract.NEO.TotalSupply(snapshot).Should().Be(new BigInteger(100000000));
         }
 
         [TestMethod]
         public void TestUnclaimedGas()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             NativeContract.NEO.UnclaimedGas(snapshot, UInt160.Zero, 10).Should().Be(new BigInteger(0));
             snapshot.Storages.Add(CreateStorageKey(20, UInt160.Zero.ToArray()), new StorageItem
             {
@@ -466,7 +469,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestVote()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             UInt160 account = UInt160.Parse("01ff00ff00ff00ff00ff00ff00ff00ff00ff00a4");
             StorageKey keyAccount = CreateStorageKey(20, account.ToArray());
             StorageKey keyValidator = CreateStorageKey(33, ECCurve.Secp256r1.G.ToArray());
@@ -528,7 +531,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
 
         internal (bool State, bool Result) Transfer4TesingOnBalanceChanging(BigInteger amount, bool addVotes)
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             snapshot.PersistingBlock = Blockchain.GenesisBlock;
             var engine = new ApplicationEngine(TriggerType.Application, Blockchain.GenesisBlock, snapshot, 0, true);
             ScriptBuilder sb = new ScriptBuilder();

@@ -92,6 +92,8 @@ namespace Neo.UnitTests.Wallets
         private static KeyPair glkey;
         private static string nep2Key;
 
+        private TestBlockchain testBlockchain;
+
         [ClassInitialize]
         public static void ClassInit(TestContext context)
         {
@@ -99,10 +101,12 @@ namespace Neo.UnitTests.Wallets
             nep2Key = glkey.Export("pwd", 0, 0, 0);
         }
 
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]
@@ -196,7 +200,7 @@ namespace Neo.UnitTests.Wallets
             account.Lock = false;
 
             // Fake balance
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var key = NativeContract.GAS.CreateStorageKey(20, account.ScriptHash);
             var entry = snapshot.Storages.GetAndChange(key, () => new StorageItem
             {
@@ -228,7 +232,7 @@ namespace Neo.UnitTests.Wallets
             account.Lock = false;
 
             // Fake balance
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var key = NativeContract.GAS.CreateStorageKey(20, account.ScriptHash);
             var entry = snapshot.Storages.GetAndChange(key, () => new StorageItem
             {
@@ -338,7 +342,7 @@ namespace Neo.UnitTests.Wallets
             action.Should().Throw<InvalidOperationException>();
 
             // Fake balance
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var key = NativeContract.GAS.CreateStorageKey(20, account.ScriptHash);
             var entry1 = snapshot.Storages.GetAndChange(key, () => new StorageItem
             {
@@ -410,7 +414,7 @@ namespace Neo.UnitTests.Wallets
             account.Lock = false;
 
             // Fake balance
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var key = NativeContract.GAS.CreateStorageKey(20, account.ScriptHash);
             var entry = snapshot.Storages.GetAndChange(key, () => new StorageItem
             {

@@ -1,28 +1,30 @@
-using Neo.Ledger;
 using System;
 using Neo.Persistence;
 
 namespace Neo.UnitTests
 {
-    public static class TestBlockchain
+    public class TestBlockchain
     {
-        public static readonly NeoSystem TheNeoSystem;
-        public static readonly NeoContainer Container;
+        private readonly NeoSystem _neoSystem;
+        private readonly NeoContainer _container;
 
-        static TestBlockchain()
+        public TestBlockchain()
         {
-            Container = new NeoContainer();
-            var memoryPool = Container.ResolveMemoryPool();
-            var blockchainActor = Container.ResolveBlockchainActor(memoryPool, new MemoryStore());
+            _container = new NeoContainer();
+            var memoryPool = _container.ResolveMemoryPool();
+            var blockchainActor = _container.ResolveBlockchainActor(memoryPool, new MemoryStore());
             var _ = blockchainActor.Path;
 
             Console.WriteLine("initialize NeoSystem");
             // Ensure that blockchain is loaded
-            TheNeoSystem = Container.ResolveNeoSystem(Container.Blockchain.Store);
+            _neoSystem = _container.ResolveNeoSystem(_container.Blockchain.Store);
         }
 
-        public static void InitializeMockNeoSystem()
+        public void InitializeMockNeoSystem()
         {
         }
+
+        public NeoSystem NeoSystem => _neoSystem;
+        public NeoContainer Container => _container;
     }
 }

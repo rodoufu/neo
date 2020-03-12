@@ -9,6 +9,13 @@ namespace Neo.UnitTests.Plugins
     public class UT_Plugin
     {
         private static readonly object locker = new object();
+        private TestBlockchain testBlockchain;
+
+        [TestInitialize]
+        public void TestSetup()
+        {
+            testBlockchain = new TestBlockchain();
+        }
 
         [TestMethod]
         public void TestGetConfigFile()
@@ -57,7 +64,7 @@ namespace Neo.UnitTests.Plugins
         [TestMethod]
         public void TestResumeNodeStartupAndSuspendNodeStartup()
         {
-            TestLogPlugin.TestLoadPlugins(TestBlockchain.TheNeoSystem);
+            TestLogPlugin.TestLoadPlugins(testBlockchain.NeoSystem);
             TestLogPlugin.TestSuspendNodeStartup();
             TestLogPlugin.TestSuspendNodeStartup();
             TestLogPlugin.TestResumeNodeStartup().Should().BeFalse();

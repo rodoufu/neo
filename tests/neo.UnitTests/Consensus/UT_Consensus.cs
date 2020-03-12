@@ -26,10 +26,13 @@ namespace Neo.UnitTests.Consensus
     [TestClass]
     public class ConsensusTests : TestKit
     {
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestCleanup]
@@ -461,7 +464,7 @@ namespace Neo.UnitTests.Consensus
             ContractParametersContext sc;
             try
             {
-                sc = TestBlockchain.Container.ResolveContractParametersContext(payload);
+                sc = testBlockchain.Container.ResolveContractParametersContext(payload);
                 byte[] signature = sc.Verifiable.Sign(kp);
                 sc.AddSignature(Contract.CreateSignatureContract(kp.PublicKey), kp.PublicKey, signature);
             }
@@ -475,7 +478,7 @@ namespace Neo.UnitTests.Consensus
         [TestMethod]
         public void TestSerializeAndDeserializeConsensusContext()
         {
-            var consensusContext = TestBlockchain.Container.ResolveConsensusContext(null, null);
+            var consensusContext = testBlockchain.Container.ResolveConsensusContext(null, null);
             {
                 consensusContext.Block = new Block
                 {
@@ -551,7 +554,7 @@ namespace Neo.UnitTests.Consensus
             consensusContext.LastChangeViewPayloads = new ConsensusPayload[consensusContext.Validators.Length];
 
             var copiedContext = TestUtils.CopyMsgBySerialization(
-                consensusContext, TestBlockchain.Container.ResolveConsensusContext(null, null));
+                consensusContext, testBlockchain.Container.ResolveConsensusContext(null, null));
 
             copiedContext.Block.PrevHash.Should().Be(consensusContext.Block.PrevHash);
             copiedContext.Block.Index.Should().Be(consensusContext.Block.Index);

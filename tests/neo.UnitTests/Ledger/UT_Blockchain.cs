@@ -45,12 +45,14 @@ namespace Neo.UnitTests.Ledger
     public class UT_Blockchain : TestKit
     {
         private NeoSystem system;
-        Transaction txSample = Blockchain.GenesisBlock.Transactions[0];
+        private TestBlockchain testBlockchain;
+        private Transaction txSample = Blockchain.GenesisBlock.Transactions[0];
 
         [TestInitialize]
         public void Initialize()
         {
-            system = TestBlockchain.TheNeoSystem;
+            testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
             // TODO @rodoufu fix this
 //            Blockchain.Singleton.MemPool.TryAdd(txSample.Hash, txSample);
         }
@@ -166,7 +168,7 @@ namespace Neo.UnitTests.Ledger
 
             tx.Nonce = nonce;
 
-            var data = TestBlockchain.Container.ResolveContractParametersContext(tx);
+            var data = testBlockchain.Container.ResolveContractParametersContext(tx);
             Assert.IsTrue(wallet.Sign(data));
             Assert.IsTrue(data.Completed);
 

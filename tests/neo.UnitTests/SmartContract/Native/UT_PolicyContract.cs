@@ -15,10 +15,13 @@ namespace Neo.UnitTests.SmartContract.Native
     [TestClass]
     public class UT_PolicyContract
     {
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]

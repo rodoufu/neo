@@ -13,10 +13,13 @@ namespace Neo.UnitTests.SmartContract.Native
     [TestClass]
     public class UT_NativeContract
     {
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]
@@ -35,7 +38,7 @@ namespace Neo.UnitTests.SmartContract.Native
         public void TestInvoke()
         {
             ApplicationEngine engine1 = new ApplicationEngine(
-                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
             TestNativeContract testNativeContract = new TestNativeContract();
 
             ScriptBuilder sb1 = new ScriptBuilder();
@@ -45,7 +48,7 @@ namespace Neo.UnitTests.SmartContract.Native
             testNativeContract.Invoke(engine1).Should().BeFalse();
 
             ApplicationEngine engine2 = new ApplicationEngine(
-                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
 
             ScriptBuilder sb2 = new ScriptBuilder();
             sb2.EmitSysCall("test".ToInteropMethodHash());
@@ -68,7 +71,7 @@ namespace Neo.UnitTests.SmartContract.Native
         public void TestOnPersistWithArgs()
         {
             ApplicationEngine engine1 = new ApplicationEngine(
-                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
             TestNativeContract testNativeContract = new TestNativeContract();
             VMArray args = new VMArray();
 
@@ -76,7 +79,7 @@ namespace Neo.UnitTests.SmartContract.Native
             testNativeContract.TestOnPersist(engine1, args).Should().Be(result1);
 
             ApplicationEngine engine2 = new ApplicationEngine(
-                TriggerType.System, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+                TriggerType.System, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
             VM.Types.Boolean result2 = new VM.Types.Boolean(true);
             testNativeContract.TestOnPersist(engine2, args).Should().Be(result2);
         }

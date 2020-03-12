@@ -17,10 +17,13 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
     [TestClass]
     public class UT_GasToken
     {
+        private TestBlockchain testBlockchain;
+
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]
@@ -38,7 +41,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void Check_BalanceOfTransferAndBurn()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             snapshot.PersistingBlock = new Block() { Index = 1000 };
 
             byte[] from = Contract.CreateMultiSigRedeemScript(Blockchain.StandbyValidators.Length / 2 + 1,
@@ -131,7 +134,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         public void Check_BadScript()
         {
             var engine = new ApplicationEngine(
-                TriggerType.Application, null, TestBlockchain.Container.Blockchain.GetSnapshot(), 0);
+                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
 
             var script = new ScriptBuilder();
             script.Emit(OpCode.NOP);
@@ -158,7 +161,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetSysFeeAmount2()
         {
-            var snapshot = TestBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             NativeContract.GAS.GetSysFeeAmount(snapshot, 0).Should().Be(new BigInteger(0));
             NativeContract.GAS.GetSysFeeAmount(snapshot, 1).Should().Be(new BigInteger(0));
 

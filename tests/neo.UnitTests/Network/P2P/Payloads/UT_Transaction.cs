@@ -19,11 +19,13 @@ namespace Neo.UnitTests.Network.P2P.Payloads
     public class UT_Transaction
     {
         Transaction uut;
+        private TestBlockchain testBlockchain;
 
         [TestInitialize]
         public void TestSetup()
         {
-            TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
             uut = new Transaction();
         }
 
