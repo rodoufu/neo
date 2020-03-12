@@ -24,7 +24,6 @@ namespace Neo.Ledger
         public class ImportCompleted { }
         public class FillMemoryPool { public IEnumerable<Transaction> Transactions; }
         public class FillCompleted { }
-        private class ParallelVerified { public Transaction Transaction; public bool ShouldRelay; public RelayResultReason VerifyResult; }
 
         public static readonly uint MillisecondsPerBlock = ProtocolSettings.Default.MillisecondsPerBlock;
         public const uint DecrementInterval = 2000000;
@@ -363,39 +362,16 @@ namespace Neo.Ledger
             else if (!MemPool.CanTransactionFitInPool(transaction))
                 reason = RelayResultReason.OutOfMemory;
             else
-                reason = transaction.VerifyForEachBlock(currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
-            if (reason == RelayResultReason.Succeed)
-            {
-                Task.Run(() =>
-                {
-                    return new ParallelVerified
-                    {
-                        Transaction = transaction,
-                        ShouldRelay = relay,
-                        VerifyResult = transaction.VerifyParallelParts(currentSnapshot)
-                    };
-                }).PipeTo(self, sender);
-            }
-            else
-            {
-                sender.Tell(reason);
-            }
-        }
+                reason = transaction.Verify(currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
 
-        private void OnParallelVerified(ParallelVerified parallelVerified, IActorRef sender)
-        {
-            RelayResultReason reason = parallelVerified.VerifyResult;
             if (reason == RelayResultReason.Succeed)
             {
-                if (View.ContainsTransaction(parallelVerified.Transaction.Hash))
-                    reason = RelayResultReason.AlreadyExists;
-                else if (!MemPool.CanTransactionFitInPool(parallelVerified.Transaction))
+                if (!MemPool.TryAdd(transaction.Hash, transaction))
                     reason = RelayResultReason.OutOfMemory;
-                else if (!MemPool.TryAdd(parallelVerified.Transaction.Hash, parallelVerified.Transaction))
-                    reason = RelayResultReason.OutOfMemory;
-                else if (parallelVerified.ShouldRelay)
-                    localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = parallelVerified.Transaction });
+                else if (relay)
+                    localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = transaction });
             }
+
             sender.Tell(reason);
         }
 

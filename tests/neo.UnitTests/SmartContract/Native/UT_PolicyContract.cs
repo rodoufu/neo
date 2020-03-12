@@ -234,13 +234,12 @@ namespace Neo.UnitTests.SmartContract.Native
         [TestMethod]
         public void TestCheckPolicy()
         {
-            // TODO @rodoufu fix this
 //            Transaction tx = Blockchain.GenesisBlock.Transactions[0];
 //            var snapshot = Blockchain.Singleton.GetSnapshot();
 //
 //            StorageKey storageKey = new StorageKey
 //            {
-//                ScriptHash = NativeContract.Policy.Hash,
+//                Id = NativeContract.Policy.Id,
 //                Key = new byte[sizeof(byte)]
 //            };
 //            storageKey.Key[0] = 15;

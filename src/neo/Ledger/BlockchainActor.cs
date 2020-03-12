@@ -72,12 +72,8 @@ namespace Neo.Ledger
                         foreach (var tx in transactions) blockchain.OnNewTransaction(tx, false, Self, Sender);
                         break;
                     }
-
                     case Transaction transaction:
                         blockchain.OnNewTransaction(transaction, true, Self, Sender);
-                        break;
-                    case ParallelVerified parallelVerified:
-                        blockchain.OnParallelVerified(parallelVerified, Sender);
                         break;
                     case ConsensusPayload payload:
                         Sender.Tell(blockchain.OnNewConsensus(payload));

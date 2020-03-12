@@ -20,6 +20,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         {
             // TODO @rodoufu fix this
 //            var snapshot = Blockchain.Singleton.GetSnapshot();
+//
+//            TestNep5Token test = new TestNep5Token();
 //            StorageItem item = new StorageItem
 //            {
 //                Value = new byte[] { 0x01 }
@@ -34,10 +36,9 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
 //                script = sb.ToArray();
 //            }
 //            var Hash = script.ToScriptHash();
-//            key.ScriptHash = Hash;
+//            key.Id = test.Id;
 //
 //            snapshot.Storages.Add(key, item);
-//            TestNep5Token test = new TestNep5Token();
 //            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
 //            StackItem stackItem = test.TotalSupply(ae, null);
 //            stackItem.GetBigInteger().Should().Be(1);
@@ -67,7 +68,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
 //                script = sb.ToArray();
 //            }
 //            var Hash = script.ToScriptHash();
-//            key.ScriptHash = Hash;
+//            key.Id = test.Id;
 //
 //            snapshot.Storages.Add(key, item);
 //
@@ -80,7 +81,7 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         {
             StorageKey storageKey = new StorageKey
             {
-                ScriptHash = null,
+                Id = 0,
                 Key = new byte[sizeof(byte) + (key?.Length ?? 0)]
             };
             storageKey.Key[0] = prefix;
@@ -91,6 +92,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
 
     public class TestNep5Token : Nep5Token<NeoToken.AccountState>
     {
+        public override int Id => 0x10000005;
+
         public override string Name => throw new NotImplementedException();
 
         public override string Symbol => throw new NotImplementedException();
