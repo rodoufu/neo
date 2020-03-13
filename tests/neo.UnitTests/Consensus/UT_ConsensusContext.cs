@@ -29,7 +29,8 @@ namespace Neo.UnitTests.Consensus
 
             var rand = new Random();
             var mockWallet = new Mock<Wallet>();
-            mockWallet.Setup(p => p.GetAccount(It.IsAny<UInt160>())).Returns<UInt160>(p => new TestWalletAccount(p));
+            mockWallet.Setup(p => p.GetAccount(It.IsAny<UInt160>())).Returns<UInt160>(
+                p => new TestWalletAccount(p));
 
             // Create dummy validators
 
@@ -42,9 +43,10 @@ namespace Neo.UnitTests.Consensus
                 _validatorKeys[x] = new KeyPair(pk);
             }
 
-            var container = new NeoContainer();
-            Assert.IsNotNull(container.ResolveBlockchainActor(container.ResolveMemoryPool(), new MemoryStore()));
-            _context = container.ResolveConsensusContext(mockWallet.Object, container.Blockchain.Store);
+            Assert.IsNotNull(testBlockchain.Container.ResolveBlockchainActor(
+                testBlockchain.Container.ResolveMemoryPool(), new MemoryStore()));
+            _context = testBlockchain.Container.ResolveConsensusContext(mockWallet.Object,
+                testBlockchain.Container.Blockchain.Store);
             _context.Validators = _validatorKeys.Select(u => u.PublicKey).ToArray();
             _context.Reset(0);
         }

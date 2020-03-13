@@ -45,6 +45,8 @@ namespace Neo.UnitTests.Ledger
 
             // Create a MemoryPool with capacity of 100
             _unit = testBlockchain.Container.ResolveMemoryPool(100);
+            var blockchainActor = testBlockchain.Container.ResolveBlockchainActor(_unit, new MemoryStore());
+            var _ = blockchainActor.Path;
             _unit.LoadPolicy(testBlockchain.Container.Blockchain.GetSnapshot());
 
             // Verify capacity equals the amount specified
