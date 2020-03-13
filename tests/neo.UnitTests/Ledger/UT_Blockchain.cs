@@ -45,26 +45,23 @@ namespace Neo.UnitTests.Ledger
     public class UT_Blockchain : TestKit
     {
         private NeoSystem system;
-        private TestBlockchain testBlockchain;
         private Transaction txSample = Blockchain.GenesisBlock.Transactions[0];
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            testBlockchain = new TestBlockchain();
-            system = testBlockchain.NeoSystem;
-            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
-        }
 
         [TestMethod]
         public void TestContainsBlock()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.ContainsBlock(UInt256.Zero).Should().BeFalse();
         }
 
         [TestMethod]
         public void TestContainsTransaction()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.ContainsTransaction(UInt256.Zero).Should().BeFalse();
             testBlockchain.Container.Blockchain.ContainsTransaction(txSample.Hash).Should().BeTrue();
         }
@@ -72,24 +69,36 @@ namespace Neo.UnitTests.Ledger
         [TestMethod]
         public void TestGetCurrentBlockHash()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.CurrentBlockHash.Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
         }
 
         [TestMethod]
         public void TestGetCurrentHeaderHash()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.CurrentHeaderHash.Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
         }
 
         [TestMethod]
         public void TestGetBlock()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.GetBlock(UInt256.Zero).Should().BeNull();
         }
 
         [TestMethod]
         public void TestGetBlockHash()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.GetBlockHash(0).Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
             testBlockchain.Container.Blockchain.GetBlockHash(10).Should().BeNull();
         }
@@ -97,6 +106,9 @@ namespace Neo.UnitTests.Ledger
         [TestMethod]
         public void TestGetTransaction()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             testBlockchain.Container.Blockchain.GetTransaction(UInt256.Zero).Should().BeNull();
             testBlockchain.Container.Blockchain.GetTransaction(txSample.Hash).Should().NotBeNull();
         }
@@ -104,6 +116,9 @@ namespace Neo.UnitTests.Ledger
         [TestMethod]
         public void TestValidTransaction()
         {
+            var testBlockchain = new TestBlockchain();
+            system = testBlockchain.NeoSystem;
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
             var senderProbe = CreateTestProbe();
             var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             var walletA = TestUtils.GenerateTestWallet();
@@ -134,7 +149,7 @@ namespace Neo.UnitTests.Ledger
 
                 // Make transaction
 
-                var tx = CreateValidTx(walletA, acc.ScriptHash, 0);
+                var tx = CreateValidTx(walletA, acc.ScriptHash, 0, testBlockchain);
 
                 senderProbe.Send(testBlockchain.Container.BlockchainActor, tx);
                 senderProbe.ExpectMsg(RelayResultReason.Succeed);
@@ -144,7 +159,7 @@ namespace Neo.UnitTests.Ledger
             }
         }
 
-        private Transaction CreateValidTx(NEP6Wallet wallet, UInt160 account, uint nonce)
+        private Transaction CreateValidTx(NEP6Wallet wallet, UInt160 account, uint nonce, TestBlockchain testBlockchain)
         {
             var tx = wallet.MakeTransaction(new TransferOutput[]
                 {
