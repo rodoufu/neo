@@ -42,39 +42,39 @@ namespace Neo.UnitTests.Ledger
         [TestMethod]
         public void TestGetBlock()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            var tx1 = TestUtils.GetTransaction();
-//            tx1.Script = new byte[] { 0x01,0x01,0x01,0x01,
-//                                      0x01,0x01,0x01,0x01,
-//                                      0x01,0x01,0x01,0x01,
-//                                      0x01,0x01,0x01,0x01 };
-//            var state1 = new TransactionState
-//            {
-//                Transaction = tx1,
-//                BlockIndex = 1
-//            };
-//            var tx2 = TestUtils.GetTransaction();
-//            tx2.Script = new byte[] { 0x01,0x01,0x01,0x01,
-//                                      0x01,0x01,0x01,0x01,
-//                                      0x01,0x01,0x01,0x01,
-//                                      0x01,0x01,0x01,0x02 };
-//            var state2 = new TransactionState
-//            {
-//                Transaction = tx2,
-//                BlockIndex = 1
-//            };
-//            snapshot.Transactions.Add(tx1.Hash, state1);
-//            snapshot.Transactions.Add(tx2.Hash, state2);
-//
-//            TrimmedBlock tblock = GetTrimmedBlockWithNoTransaction();
-//            tblock.Hashes = new UInt256[] { tx1.Hash, tx2.Hash };
-//            Block block = tblock.GetBlock(snapshot.Transactions);
-//
-//            block.Index.Should().Be(1);
-//            block.MerkleRoot.Should().Be(UInt256.Parse("0xa400ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff02"));
-//            block.Transactions.Length.Should().Be(1);
-//            block.Transactions[0].Hash.Should().Be(tx2.Hash);
+            var testBlockchain = new TestBlockchain();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var tx1 = TestUtils.GetTransaction();
+            tx1.Script = new byte[] { 0x01,0x01,0x01,0x01,
+                                      0x01,0x01,0x01,0x01,
+                                      0x01,0x01,0x01,0x01,
+                                      0x01,0x01,0x01,0x01 };
+            var state1 = new TransactionState
+            {
+                Transaction = tx1,
+                BlockIndex = 1
+            };
+            var tx2 = TestUtils.GetTransaction();
+            tx2.Script = new byte[] { 0x01,0x01,0x01,0x01,
+                                      0x01,0x01,0x01,0x01,
+                                      0x01,0x01,0x01,0x01,
+                                      0x01,0x01,0x01,0x02 };
+            var state2 = new TransactionState
+            {
+                Transaction = tx2,
+                BlockIndex = 1
+            };
+            snapshot.Transactions.Add(tx1.Hash, state1);
+            snapshot.Transactions.Add(tx2.Hash, state2);
+
+            TrimmedBlock tblock = GetTrimmedBlockWithNoTransaction();
+            tblock.Hashes = new UInt256[] { tx1.Hash, tx2.Hash };
+            Block block = tblock.GetBlock(snapshot.Transactions);
+
+            block.Index.Should().Be(1);
+            block.MerkleRoot.Should().Be(UInt256.Parse("0xa400ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff02"));
+            block.Transactions.Length.Should().Be(1);
+            block.Transactions[0].Hash.Should().Be(tx2.Hash);
         }
 
         [TestMethod]

@@ -53,104 +53,95 @@ namespace Neo.UnitTests.Ledger
         {
             testBlockchain = new TestBlockchain();
             system = testBlockchain.NeoSystem;
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.MemPool.TryAdd(txSample.Hash, txSample);
+            testBlockchain.Container.ResolveMemoryPool().TryAdd(txSample.Hash, txSample);
         }
 
         [TestMethod]
         public void TestContainsBlock()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.ContainsBlock(UInt256.Zero).Should().BeFalse();
+            testBlockchain.Container.Blockchain.ContainsBlock(UInt256.Zero).Should().BeFalse();
         }
 
         [TestMethod]
         public void TestContainsTransaction()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.ContainsTransaction(UInt256.Zero).Should().BeFalse();
-//            Blockchain.Singleton.ContainsTransaction(txSample.Hash).Should().BeTrue();
+            testBlockchain.Container.Blockchain.ContainsTransaction(UInt256.Zero).Should().BeFalse();
+            testBlockchain.Container.Blockchain.ContainsTransaction(txSample.Hash).Should().BeTrue();
         }
 
         [TestMethod]
         public void TestGetCurrentBlockHash()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.CurrentBlockHash.Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
+            testBlockchain.Container.Blockchain.CurrentBlockHash.Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
         }
 
         [TestMethod]
         public void TestGetCurrentHeaderHash()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.CurrentHeaderHash.Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
+            testBlockchain.Container.Blockchain.CurrentHeaderHash.Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
         }
 
         [TestMethod]
         public void TestGetBlock()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.GetBlock(UInt256.Zero).Should().BeNull();
+            testBlockchain.Container.Blockchain.GetBlock(UInt256.Zero).Should().BeNull();
         }
 
         [TestMethod]
         public void TestGetBlockHash()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.GetBlockHash(0).Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
-//            Blockchain.Singleton.GetBlockHash(10).Should().BeNull();
+            testBlockchain.Container.Blockchain.GetBlockHash(0).Should().Be(UInt256.Parse("0x2b8a21dfaf989dc1a5f2694517aefdbda1dd340f3cf177187d73e038a58ad2bb"));
+            testBlockchain.Container.Blockchain.GetBlockHash(10).Should().BeNull();
         }
 
         [TestMethod]
         public void TestGetTransaction()
         {
-            // TODO @rodoufu fix this
-//            Blockchain.Singleton.GetTransaction(UInt256.Zero).Should().BeNull();
-//            Blockchain.Singleton.GetTransaction(txSample.Hash).Should().NotBeNull();
+            testBlockchain.Container.Blockchain.GetTransaction(UInt256.Zero).Should().BeNull();
+            testBlockchain.Container.Blockchain.GetTransaction(txSample.Hash).Should().NotBeNull();
         }
 
         [TestMethod]
         public void TestValidTransaction()
         {
-            // TODO @rodoufu fix this
-//            var senderProbe = CreateTestProbe();
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            var walletA = TestUtils.GenerateTestWallet();
-//
-//            using (var unlockA = walletA.Unlock("123"))
-//            {
-//                var acc = walletA.CreateAccount();
-//
-//                // Fake balance
-//
-//                var key = NativeContract.GAS.CreateStorageKey(20, acc.ScriptHash);
-//                var entry = snapshot.Storages.GetAndChange(key, () => new StorageItem
-//                {
-//                    Value = new Nep5AccountState().ToByteArray()
-//                });
-//
-//                entry.Value = new Nep5AccountState()
-//                {
-//                    Balance = 100_000_000 * NativeContract.GAS.Factor
-//                }
-//                .ToByteArray();
-//
-//                snapshot.Commit();
-//
-//                typeof(Blockchain)
-//                    .GetMethod("UpdateCurrentSnapshot", BindingFlags.Instance | BindingFlags.NonPublic)
-//                    .Invoke(Blockchain.Singleton, null);
-//
-//                // Make transaction
-//
-//                var tx = CreateValidTx(walletA, acc.ScriptHash, 0);
-//
-//                senderProbe.Send(system.Blockchain, tx);
-//                senderProbe.ExpectMsg(RelayResultReason.Succeed);
-//
-//                senderProbe.Send(system.Blockchain, tx);
-//                senderProbe.ExpectMsg(RelayResultReason.AlreadyExists);
-//            }
+            var senderProbe = CreateTestProbe();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var walletA = TestUtils.GenerateTestWallet();
+
+            using (var unlockA = walletA.Unlock("123"))
+            {
+                var acc = walletA.CreateAccount();
+
+                // Fake balance
+
+                var key = NativeContract.GAS.CreateStorageKey(20, acc.ScriptHash);
+                var entry = snapshot.Storages.GetAndChange(key, () => new StorageItem
+                {
+                    Value = new Nep5AccountState().ToByteArray()
+                });
+
+                entry.Value = new Nep5AccountState()
+                {
+                    Balance = 100_000_000 * NativeContract.GAS.Factor
+                }
+                .ToByteArray();
+
+                snapshot.Commit();
+
+                typeof(Blockchain)
+                    .GetMethod("UpdateCurrentSnapshot", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(testBlockchain.Container.Blockchain, null);
+
+                // Make transaction
+
+                var tx = CreateValidTx(walletA, acc.ScriptHash, 0);
+
+                senderProbe.Send(testBlockchain.Container.BlockchainActor, tx);
+                senderProbe.ExpectMsg(RelayResultReason.Succeed);
+
+                senderProbe.Send(testBlockchain.Container.BlockchainActor, tx);
+                senderProbe.ExpectMsg(RelayResultReason.AlreadyExists);
+            }
         }
 
         private Transaction CreateValidTx(NEP6Wallet wallet, UInt160 account, uint nonce)

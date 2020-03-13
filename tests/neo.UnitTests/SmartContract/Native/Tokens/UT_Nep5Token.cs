@@ -18,63 +18,63 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestTotalSupply()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//
-//            TestNep5Token test = new TestNep5Token();
-//            StorageItem item = new StorageItem
-//            {
-//                Value = new byte[] { 0x01 }
-//            };
-//            var key = CreateStorageKey(Prefix_TotalSupply);
-//
-//            var ServiceHash = "test".ToInteropMethodHash();
-//            byte[] script = null;
-//            using (ScriptBuilder sb = new ScriptBuilder())
-//            {
-//                sb.EmitSysCall(ServiceHash);
-//                script = sb.ToArray();
-//            }
-//            var Hash = script.ToScriptHash();
-//            key.Id = test.Id;
-//
-//            snapshot.Storages.Add(key, item);
-//            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
-//            StackItem stackItem = test.TotalSupply(ae, null);
-//            stackItem.GetBigInteger().Should().Be(1);
+            var testBlockchain = new TestBlockchain();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+
+            TestNep5Token test = new TestNep5Token();
+            StorageItem item = new StorageItem
+            {
+                Value = new byte[] { 0x01 }
+            };
+            var key = CreateStorageKey(Prefix_TotalSupply);
+
+            var ServiceHash = "test".ToInteropMethodHash();
+            byte[] script = null;
+            using (ScriptBuilder sb = new ScriptBuilder())
+            {
+                sb.EmitSysCall(ServiceHash);
+                script = sb.ToArray();
+            }
+            var Hash = script.ToScriptHash();
+            key.Id = test.Id;
+
+            snapshot.Storages.Add(key, item);
+            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
+            StackItem stackItem = test.TotalSupply(ae, null);
+            stackItem.GetBigInteger().Should().Be(1);
         }
 
         [TestMethod]
         public void TestTotalSupplyDecimal()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//
-//            TestNep5Token test = new TestNep5Token();
-//            BigInteger totalSupply = 100_000_000;
-//            totalSupply *= test.Factor;
-//
-//            StorageItem item = new StorageItem
-//            {
-//                Value = totalSupply.ToByteArrayStandard()
-//            };
-//            var key = CreateStorageKey(Prefix_TotalSupply);
-//
-//            var ServiceHash = "test".ToInteropMethodHash();
-//            byte[] script = null;
-//            using (ScriptBuilder sb = new ScriptBuilder())
-//            {
-//                sb.EmitSysCall(ServiceHash);
-//                script = sb.ToArray();
-//            }
-//            var Hash = script.ToScriptHash();
-//            key.Id = test.Id;
-//
-//            snapshot.Storages.Add(key, item);
-//
-//            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
-//            StackItem stackItem = test.TotalSupply(ae, null);
-//            stackItem.GetBigInteger().Should().Be(10_000_000_000_000_000);
+            var testBlockchain = new TestBlockchain();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+
+            TestNep5Token test = new TestNep5Token();
+            BigInteger totalSupply = 100_000_000;
+            totalSupply *= test.Factor;
+
+            StorageItem item = new StorageItem
+            {
+                Value = totalSupply.ToByteArrayStandard()
+            };
+            var key = CreateStorageKey(Prefix_TotalSupply);
+
+            var ServiceHash = "test".ToInteropMethodHash();
+            byte[] script = null;
+            using (ScriptBuilder sb = new ScriptBuilder())
+            {
+                sb.EmitSysCall(ServiceHash);
+                script = sb.ToArray();
+            }
+            var Hash = script.ToScriptHash();
+            key.Id = test.Id;
+
+            snapshot.Storages.Add(key, item);
+
+            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
+            StackItem stackItem = test.TotalSupply(ae, null);
+            stackItem.GetBigInteger().Should().Be(10_000_000_000_000_000);
         }
 
         public StorageKey CreateStorageKey(byte prefix, byte[] key = null)
