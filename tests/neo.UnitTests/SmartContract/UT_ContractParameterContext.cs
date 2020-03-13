@@ -61,18 +61,18 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestParse()
         {
-            // TODO @rodoufu fix me
-//            var ret = ContractParametersContext.Parse("{\"type\":\"Neo.Network.P2P.Payloads.Transaction\",\"hex\":\"AAAAAADyd\\/EUQDWkOJf5\\u002BhFSWOrAFa3KvgAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA==\",\"items\":{\"0xbecaad15c0ea585211faf99738a4354014f177f2\":{\"script\":\"IQJv8DuUkkHOHa3UNRnmlg4KhbQaaaBcMoEDqivOFZTKFmh0dHaq\",\"parameters\":[{\"type\":\"Signature\",\"value\":\"AQ==\"}]}}}");
-//            ret.ScriptHashes[0].ToString().Should().Be("0xbecaad15c0ea585211faf99738a4354014f177f2");
-//            ((Transaction)ret.Verifiable).Script.ToHexString().Should().Be(new byte[1].ToHexString());
+            var ret = ContractParametersContext.Parse(testBlockchain.Container,
+                "{\"type\":\"Neo.Network.P2P.Payloads.Transaction\",\"hex\":\"AAAAAADyd\\/EUQDWkOJf5\\u002BhFSWOrAFa3KvgAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA==\",\"items\":{\"0xbecaad15c0ea585211faf99738a4354014f177f2\":{\"script\":\"IQJv8DuUkkHOHa3UNRnmlg4KhbQaaaBcMoEDqivOFZTKFmh0dHaq\",\"parameters\":[{\"type\":\"Signature\",\"value\":\"AQ==\"}]}}}");
+            ret.ScriptHashes[0].ToString().Should().Be("0xbecaad15c0ea585211faf99738a4354014f177f2");
+            ((Transaction)ret.Verifiable).Script.ToHexString().Should().Be(new byte[1].ToHexString());
         }
 
         [TestMethod]
         public void TestFromJson()
         {
-            // TODO @rodoufu fix me
-//            Action action = () => ContractParametersContext.Parse("{\"type\":\"wrongType\",\"hex\":\"00000000007c97764845172d827d3c863743293931a691271a0000000000000000000000000000000000000000000100\",\"items\":{\"0x1bd5c777ec35768892bd3daab60fb7a1cb905066\":{\"script\":\"21026ff03b949241ce1dadd43519e6960e0a85b41a69a05c328103aa2bce1594ca1650680a906ad4\",\"parameters\":[{\"type\":\"Signature\",\"value\":\"01\"}]}}}");
-//            action.Should().Throw<FormatException>();
+            Action action = () => ContractParametersContext.Parse(testBlockchain.Container,
+                "{\"type\":\"wrongType\",\"hex\":\"00000000007c97764845172d827d3c863743293931a691271a0000000000000000000000000000000000000000000100\",\"items\":{\"0x1bd5c777ec35768892bd3daab60fb7a1cb905066\":{\"script\":\"21026ff03b949241ce1dadd43519e6960e0a85b41a69a05c328103aa2bce1594ca1650680a906ad4\",\"parameters\":[{\"type\":\"Signature\",\"value\":\"01\"}]}}}");
+            action.Should().Throw<FormatException>();
         }
 
         [TestMethod]

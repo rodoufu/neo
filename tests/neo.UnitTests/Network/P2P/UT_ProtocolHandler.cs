@@ -21,8 +21,7 @@ namespace Neo.UnitTests.Network.P2P
         public void TestSetup()
         {
             testBlockchain = new TestBlockchain();
-            // TODO @rodoufu fix this
-//            testBlockchain = TestBlockchain.InitializeMockNeoSystem();
+            testBlockchain.InitializeMockNeoSystem();
         }
 
         [TestMethod]
@@ -30,7 +29,7 @@ namespace Neo.UnitTests.Network.P2P
         {
             var senderProbe = CreateTestProbe();
             var parent = CreateTestProbe();
-            // TODO FIXME this tests
+            // TODO @rodoufu fix this
 //            var protocolActor = ActorOfAsTestActorRef(() => new ProtocolHandler(testBlockchain), parent);
 
             var payload = new VersionPayload()

@@ -30,65 +30,62 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestLog()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
-//            ApplicationEngine.Log += Test_Log1;
-//            string logMessage = "TestMessage";
-//
-//            engine.SendLog(UInt160.Zero, logMessage);
-//            message.Should().Be(logMessage);
-//
-//            ApplicationEngine.Log += Test_Log2;
-//            engine.SendLog(UInt160.Zero, logMessage);
-//            message.Should().Be(null);
-//
-//            message = logMessage;
-//            ApplicationEngine.Log -= Test_Log1;
-//            engine.SendLog(UInt160.Zero, logMessage);
-//            message.Should().Be(null);
-//
-//            ApplicationEngine.Log -= Test_Log2;
-//            engine.SendLog(UInt160.Zero, logMessage);
-//            message.Should().Be(null);
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            ApplicationEngine.Log += Test_Log1;
+            string logMessage = "TestMessage";
+
+            engine.SendLog(UInt160.Zero, logMessage);
+            message.Should().Be(logMessage);
+
+            ApplicationEngine.Log += Test_Log2;
+            engine.SendLog(UInt160.Zero, logMessage);
+            message.Should().Be(null);
+
+            message = logMessage;
+            ApplicationEngine.Log -= Test_Log1;
+            engine.SendLog(UInt160.Zero, logMessage);
+            message.Should().Be(null);
+
+            ApplicationEngine.Log -= Test_Log2;
+            engine.SendLog(UInt160.Zero, logMessage);
+            message.Should().Be(null);
         }
 
         [TestMethod]
         public void TestNotify()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
-//            ApplicationEngine.Notify += Test_Notify1;
-//            StackItem notifyItem = "TestItem";
-//
-//            engine.SendNotification(UInt160.Zero, notifyItem);
-//            item.Should().Be(notifyItem);
-//
-//            ApplicationEngine.Notify += Test_Notify2;
-//            engine.SendNotification(UInt160.Zero, notifyItem);
-//            item.Should().Be(null);
-//
-//            item = notifyItem;
-//            ApplicationEngine.Notify -= Test_Notify1;
-//            engine.SendNotification(UInt160.Zero, notifyItem);
-//            item.Should().Be(null);
-//
-//            ApplicationEngine.Notify -= Test_Notify2;
-//            engine.SendNotification(UInt160.Zero, notifyItem);
-//            item.Should().Be(null);
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            ApplicationEngine.Notify += Test_Notify1;
+            StackItem notifyItem = "TestItem";
+
+            engine.SendNotification(UInt160.Zero, notifyItem);
+            item.Should().Be(notifyItem);
+
+            ApplicationEngine.Notify += Test_Notify2;
+            engine.SendNotification(UInt160.Zero, notifyItem);
+            item.Should().Be(null);
+
+            item = notifyItem;
+            ApplicationEngine.Notify -= Test_Notify1;
+            engine.SendNotification(UInt160.Zero, notifyItem);
+            item.Should().Be(null);
+
+            ApplicationEngine.Notify -= Test_Notify2;
+            engine.SendNotification(UInt160.Zero, notifyItem);
+            item.Should().Be(null);
         }
 
         [TestMethod]
         public void TestDisposable()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            var m = new Mock<IDisposable>();
-//            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
-//            engine.AddDisposable(m.Object).Should().Be(m.Object);
-//            Action action = () => engine.Dispose();
-//            action.Should().NotThrow();
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var m = new Mock<IDisposable>();
+            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            engine.AddDisposable(m.Object).Should().Be(m.Object);
+            Action action = () => engine.Dispose();
+            action.Should().NotThrow();
         }
 
         private void Test_Log1(object sender, LogEventArgs e)
@@ -114,29 +111,27 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestCreateDummyBlock()
         {
-            // TODO @rodoufu fix this
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            byte[] SyscallSystemRuntimeCheckWitnessHash = new byte[] { 0x68, 0xf8, 0x27, 0xec, 0x8c };
-//            ApplicationEngine.Run(SyscallSystemRuntimeCheckWitnessHash, snapshot);
-//            snapshot.PersistingBlock.Version.Should().Be(0);
-//            snapshot.PersistingBlock.PrevHash.Should().Be(Blockchain.GenesisBlock.Hash);
-//            snapshot.PersistingBlock.MerkleRoot.Should().Be(new UInt256());
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            byte[] SyscallSystemRuntimeCheckWitnessHash = new byte[] { 0x68, 0xf8, 0x27, 0xec, 0x8c };
+            ApplicationEngine.Run(SyscallSystemRuntimeCheckWitnessHash, snapshot);
+            snapshot.PersistingBlock.Version.Should().Be(0);
+            snapshot.PersistingBlock.PrevHash.Should().Be(Blockchain.GenesisBlock.Hash);
+            snapshot.PersistingBlock.MerkleRoot.Should().Be(new UInt256());
         }
 
         [TestMethod]
         public void TestOnSysCall()
         {
-            // TODO @rodoufu fix this
-//            InteropDescriptor descriptor = new InteropDescriptor("System.Blockchain.GetHeight", Blockchain_GetHeight, 0_00000400, TriggerType.Application, CallFlags.None);
-//            TestApplicationEngine engine = new TestApplicationEngine(TriggerType.Application, null, null, 0);
-//            byte[] SyscallSystemRuntimeCheckWitnessHash = new byte[] { 0x68, 0xf8, 0x27, 0xec, 0x8c };
-//            engine.LoadScript(SyscallSystemRuntimeCheckWitnessHash);
-//            engine.GetOnSysCall(descriptor.Hash).Should().BeFalse();
-//
-//            var snapshot = Blockchain.Singleton.GetSnapshot();
-//            engine = new TestApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
-//            engine.LoadScript(SyscallSystemRuntimeCheckWitnessHash);
-//            engine.GetOnSysCall(descriptor.Hash).Should().BeTrue();
+            InteropDescriptor descriptor = new InteropDescriptor("System.Blockchain.GetHeight", Blockchain_GetHeight, 0_00000400, TriggerType.Application, CallFlags.None);
+            TestApplicationEngine engine = new TestApplicationEngine(TriggerType.Application, null, null, 0);
+            byte[] SyscallSystemRuntimeCheckWitnessHash = new byte[] { 0x68, 0xf8, 0x27, 0xec, 0x8c };
+            engine.LoadScript(SyscallSystemRuntimeCheckWitnessHash);
+            engine.GetOnSysCall(descriptor.Hash).Should().BeFalse();
+
+            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            engine = new TestApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            engine.LoadScript(SyscallSystemRuntimeCheckWitnessHash);
+            engine.GetOnSysCall(descriptor.Hash).Should().BeTrue();
         }
 
         private static bool Blockchain_GetHeight(ApplicationEngine engine)
