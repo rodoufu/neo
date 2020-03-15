@@ -161,7 +161,7 @@ namespace Neo.UnitTests.Ledger
 
         private Transaction CreateValidTx(NEP6Wallet wallet, UInt160 account, uint nonce, TestBlockchain testBlockchain)
         {
-            var tx = wallet.MakeTransaction(new TransferOutput[]
+            var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
                 {
                     new TransferOutput()
                     {

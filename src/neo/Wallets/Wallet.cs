@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Neo.Ledger;
 using static Neo.Wallets.Helper;
 using ECPoint = Neo.Cryptography.ECC.ECPoint;
 
@@ -208,8 +209,7 @@ namespace Neo.Wallets
             return account;
         }
 
-        // TODO Maybe change the interface to accpet a blockchain object as weel
-        public Transaction MakeTransaction(TransferOutput[] outputs, UInt160 from = null)
+        public Transaction MakeTransaction(Blockchain blockchain, TransferOutput[] outputs, UInt160 from = null)
         {
             UInt160[] accounts;
             if (from is null)
@@ -222,7 +222,7 @@ namespace Neo.Wallets
                     throw new ArgumentException($"The address {from} was not found in the wallet");
                 accounts = new[] { from };
             }
-            using (SnapshotView snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
+            using (SnapshotView snapshot = blockchain.GetSnapshot())
             {
                 HashSet<UInt160> cosignerList = new HashSet<UInt160>();
                 byte[] script;
@@ -278,8 +278,7 @@ namespace Neo.Wallets
             }
         }
 
-        // TODO Maybe change the interface to accpet a blockchain object as weel
-        public Transaction MakeTransaction(byte[] script, UInt160 sender = null, TransactionAttribute[] attributes = null, Cosigner[] cosigners = null)
+        public Transaction MakeTransaction(Blockchain blockchain, byte[] script, UInt160 sender = null, TransactionAttribute[] attributes = null, Cosigner[] cosigners = null)
         {
             UInt160[] accounts;
             if (sender is null)
@@ -292,7 +291,7 @@ namespace Neo.Wallets
                     throw new ArgumentException($"The address {sender} was not found in the wallet");
                 accounts = new[] { sender };
             }
-            using (SnapshotView snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
+            using (SnapshotView snapshot = blockchain.GetSnapshot())
             {
                 var balances_gas = accounts.Select(p => (Account: p, Value: NativeContract.GAS.BalanceOf(snapshot, p))).Where(p => p.Value.Sign > 0).ToList();
                 return MakeTransaction(snapshot, script, attributes ?? new TransactionAttribute[0], cosigners ?? new Cosigner[0], balances_gas);

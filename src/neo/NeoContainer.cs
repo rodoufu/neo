@@ -8,6 +8,7 @@ using Neo.Network.P2P;
 using Neo.Persistence;
 using Neo.Wallets;
 using System.Net;
+using System.Threading;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 
@@ -18,14 +19,29 @@ namespace Neo
     /// </summary>
     public class NeoContainer
     {
+        private static NeoContainer _instance;
+
         /// <summary>
         /// Workaround for accessing the blockchain.
         /// Its very hacky and we should remove it.
         /// </summary>
-        public static NeoContainer Instance { get; private set; }
+        public static NeoContainer Instance
+        {
+            get
+            {
+                System.Console.WriteLine("static NeoContainer Instance");
+                while (_instance == null)
+                {
+                    Thread.Sleep(200);
+                }
+
+                return _instance;
+            }
+        }
 
         private IContainer container;
         private object actorSystemLock = new object();
+        private bool blockchainActorResolved = false;
 
         /// <summary>
         /// The dependency injection container.
@@ -46,7 +62,7 @@ namespace Neo
         {
             Builder = new ContainerBuilder();
 
-            Builder.RegisterInstance(this).SingleInstance().OnActivated(h => Instance = h.Instance).As<NeoContainer>();
+            Builder.RegisterInstance(this).SingleInstance().OnActivated(h => _instance = h.Instance).As<NeoContainer>();
 
             Builder.Register(c =>
             {
@@ -171,7 +187,18 @@ namespace Neo
         /// <summary>
         /// Should be used only after the NeoContainer is created.
         /// </summary>
-        internal Blockchain Blockchain => Container.Resolve<Blockchain>();
+        internal Blockchain Blockchain
+        {
+            get
+            {
+                System.Console.WriteLine("internal Blockchain Blockchain");
+                while (!blockchainActorResolved)
+                {
+                    Thread.Sleep(200);
+                }
+                return Container.Resolve<Blockchain>();
+            }
+        }
 
         public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store)
         {
@@ -179,7 +206,15 @@ namespace Neo
             return BlockchainActor;
         }
 
-        public IActorRef BlockchainActor => Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
+        public IActorRef BlockchainActor
+        {
+            get
+            {
+                var blockchainActor = Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
+                blockchainActorResolved = true;
+                return blockchainActor;
+            }
+        }
 
         public Props ResolveRemoteNodeProps(object connection, IPEndPoint remote, IPEndPoint local) =>
             Container.ResolveNamed<Props>(
@@ -192,8 +227,6 @@ namespace Neo
 
         public NeoSystem ResolveNeoSystem(IStore store) =>
             Container.Resolve<NeoSystem>(new NamedParameter("store", store));
-
-//        public NeoSystem NeoSystem => Container.Resolve<NeoSystem>();
 
         internal LocalNode LocalNode => Container.Resolve<LocalNode>();
 

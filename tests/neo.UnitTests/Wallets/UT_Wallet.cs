@@ -308,7 +308,7 @@ namespace Neo.UnitTests.Wallets
             WalletAccount account = wallet.CreateAccount(contract, glkey.PrivateKey);
             account.Lock = false;
 
-            Action action = () => wallet.MakeTransaction(new TransferOutput[]
+            Action action = () => wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
             {
                 new TransferOutput()
                 {
@@ -319,7 +319,7 @@ namespace Neo.UnitTests.Wallets
             }, UInt160.Zero);
             action.Should().Throw<ArgumentException>();
 
-            action = () => wallet.MakeTransaction(new TransferOutput[]
+            action = () => wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
             {
                 new TransferOutput()
                 {
@@ -330,7 +330,7 @@ namespace Neo.UnitTests.Wallets
             }, account.ScriptHash);
             action.Should().Throw<InvalidOperationException>();
 
-            action = () => wallet.MakeTransaction(new TransferOutput[]
+            action = () => wallet.MakeTransaction(testBlockchain.Container.Blockchain,new TransferOutput[]
             {
                 new TransferOutput()
                 {
@@ -367,7 +367,7 @@ namespace Neo.UnitTests.Wallets
 
             snapshot.Commit();
 
-            var tx = wallet.MakeTransaction(new TransferOutput[]
+            var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
             {
                 new TransferOutput()
                 {
@@ -378,7 +378,7 @@ namespace Neo.UnitTests.Wallets
             });
             tx.Should().NotBeNull();
 
-            tx = wallet.MakeTransaction(new TransferOutput[]
+            tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
             {
                 new TransferOutput()
                 {
@@ -406,7 +406,8 @@ namespace Neo.UnitTests.Wallets
         public void TestMakeTransaction2()
         {
             MyWallet wallet = new MyWallet();
-            Action action = () => wallet.MakeTransaction(new byte[] { }, UInt160.Zero, new TransactionAttribute[] { });
+            Action action = () => wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                new byte[] { }, UInt160.Zero, new TransactionAttribute[] { });
             action.Should().Throw<ArgumentException>();
 
             Contract contract = Contract.Create(new ContractParameterType[] { ContractParameterType.Boolean }, new byte[] { 1 });
@@ -427,10 +428,12 @@ namespace Neo.UnitTests.Wallets
             .ToByteArray();
             snapshot.Commit();
 
-            var tx = wallet.MakeTransaction(new byte[] { }, account.ScriptHash, new TransactionAttribute[] { });
+            var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                new byte[] { }, account.ScriptHash, new TransactionAttribute[] { });
             tx.Should().NotBeNull();
 
-            tx = wallet.MakeTransaction(new byte[] { }, null, new TransactionAttribute[] { });
+            tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                new byte[] { }, null, new TransactionAttribute[] { });
             tx.Should().NotBeNull();
 
             entry.Value = new NeoToken.AccountState()

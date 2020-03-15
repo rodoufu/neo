@@ -124,7 +124,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // Make transaction
 
-                var tx = walletA.MakeTransaction(new TransferOutput[]
+                var tx = walletA.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
                 {
                     new TransferOutput()
                     {
@@ -202,7 +202,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 // Make transaction
 
                 // self-transfer of 1e-8 GAS
-                var tx = wallet.MakeTransaction(new TransferOutput[]
+                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
                 {
                     new TransferOutput()
                     {
@@ -339,7 +339,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -433,7 +434,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -530,7 +532,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -626,7 +629,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 // due to lack of a valid witness validation
                 Transaction tx = null;
                 Assert.ThrowsException<InvalidOperationException>(() =>
-                    tx = wallet.MakeTransaction(script, acc.ScriptHash, new TransactionAttribute[0], cosigners));
+                    tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                        script, acc.ScriptHash, new TransactionAttribute[0], cosigners));
                 Assert.IsNull(tx);
             }
         }
@@ -682,7 +686,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -778,7 +783,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 // expects FAULT on execution of 'transfer' Application script
                 // due to lack of a valid witness validation
                 Transaction tx = null;
-                Assert.ThrowsException<InvalidOperationException>(() => tx = wallet.MakeTransaction(script, acc.ScriptHash, attributes, cosigners));
+                Assert.ThrowsException<InvalidOperationException>(() => tx = wallet.MakeTransaction(
+                    testBlockchain.Container.Blockchain, script, acc.ScriptHash, attributes, cosigners));
                 Assert.IsNull(tx);
             }
         }
@@ -1037,7 +1043,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
