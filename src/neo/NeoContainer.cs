@@ -19,10 +19,16 @@ namespace Neo
     /// </summary>
     public class NeoContainer
     {
+        private const string BlockchainMailbox = "blockchain-mailbox";
+        private const string TaskManagerMailbox = "task-manager-mailbox";
+        private const string ProtocolHandlerMailbox = "protocol-handler-mailbox";
+        private const string RemoteNodeMailbox = "remote-node-mailbox";
+        private const string ConsensusServiceMailbox = "consensus-service-mailbox";
+
         private static NeoContainer _instance;
 
         /// <summary>
-        /// Workaround for accessing the blockchain.
+        /// Workaround for accessing the Blockchain.
         /// Its very hacky and we should remove it.
         /// </summary>
         public static NeoContainer Instance
@@ -40,8 +46,7 @@ namespace Neo
         }
 
         private IContainer container;
-        private object actorSystemLock = new object();
-        private bool blockchainActorResolved = false;
+        private bool blockchainActorResolved;
 
         /// <summary>
         /// The dependency injection container.
@@ -64,19 +69,14 @@ namespace Neo
 
             Builder.RegisterInstance(this).SingleInstance().OnActivated(h => _instance = h.Instance).As<NeoContainer>();
 
-            Builder.Register(c =>
-            {
-                lock (actorSystemLock)
-                {
-                    return ActorSystem.Create(nameof(NeoSystem),
-                        $"akka {{ log-dead-letters = off }}" +
-                        $"blockchain-mailbox {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
-                        $"task-manager-mailbox {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
-                        $"remote-node-mailbox {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
-                        $"protocol-handler-mailbox {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
-                        $"consensus-service-mailbox {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}");
-                }
-            }).OnActivating(h =>
+            Builder.Register(c => ActorSystem.Create(nameof(NeoSystem),
+                $"akka {{ log-dead-letters = off }}" +
+                $"{BlockchainMailbox} {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
+                $"{TaskManagerMailbox} {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
+                $"{RemoteNodeMailbox} {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
+                $"{ProtocolHandlerMailbox} {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
+                $"{ConsensusServiceMailbox} {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}")
+            ).OnActivating(h =>
             {
                 h.Instance.UseAutofac(Container);
                 var propsResolver = new AutoFacDependencyResolver(Container, h.Instance);
@@ -103,7 +103,7 @@ namespace Neo
             {
                 var actorSystem = c.Resolve<ActorSystem>();
                 return actorSystem.ActorOf(
-                    actorSystem.DI().Props<Blockchain.BlockchainActor>().WithMailbox("blockchain-mailbox")
+                    actorSystem.DI().Props<Blockchain.BlockchainActor>().WithMailbox(BlockchainMailbox)
                 );
             }).SingleInstance().Named<IActorRef>(typeof(Blockchain).Name);
 
@@ -122,7 +122,7 @@ namespace Neo
             {
                 var actorSystem = c.Resolve<ActorSystem>();
                 return actorSystem.ActorOf(
-                    actorSystem.DI().Props<TaskManager>().WithMailbox("task-manager-mailbox")
+                    actorSystem.DI().Props<TaskManager>().WithMailbox(TaskManagerMailbox)
                 );
             }).SingleInstance().Named<IActorRef>(typeof(TaskManager).Name);
 
@@ -136,7 +136,7 @@ namespace Neo
                 var actorSystem = c.Resolve<ActorSystem>();
                 return actorSystem.ActorOf(
                     actorSystem.DI().Props<ConsensusService.ConsensusServiceActor>()
-                        .WithMailbox("consensus-service-mailbox")
+                        .WithMailbox(ConsensusServiceMailbox)
                 );
             }).SingleInstance().Named<IActorRef>(typeof(ConsensusService).Name);
 
@@ -152,11 +152,11 @@ namespace Neo
                 var actorSystem = c.Resolve<ActorSystem>();
                 return actorSystem.ActorOf(
                     actorSystem.DI().Props<ProtocolHandler>()
-                        .WithMailbox("protocol-handler-mailbox")
+                        .WithMailbox(ProtocolHandlerMailbox)
                 );
             }).SingleInstance().Named<IActorRef>(typeof(ProtocolHandler).Name);
             Builder.Register((c, p) =>
-                    Props.Create(() => c.Resolve<ProtocolHandler>(p)).WithMailbox("protocol-handler-mailbox"))
+                    Props.Create(() => c.Resolve<ProtocolHandler>(p)).WithMailbox(ProtocolHandlerMailbox))
                 .Named<Props>(typeof(ProtocolHandler).Name);
 
             Builder.Register((c, p) => new RemoteNode(
@@ -167,7 +167,7 @@ namespace Neo
                 c.Resolve<LocalNode>()
             )).As<RemoteNode>();
             Builder.Register((c, p) =>
-                    Props.Create(() => c.Resolve<RemoteNode>(p)).WithMailbox("remote-node-mailbox"))
+                    Props.Create(() => c.Resolve<RemoteNode>(p)).WithMailbox(RemoteNodeMailbox))
                 .Named<Props>(typeof(RemoteNode).Name);
 
             Builder.Register((c, p) => new ContractParametersContext(
