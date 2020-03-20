@@ -263,9 +263,9 @@ namespace Neo.Network.P2P.Payloads
             return tx;
         }
 
-        bool IInventory.Verify(StoreView snapshot)
+        bool IInventory.Verify(Blockchain blockchain, StoreView snapshot)
         {
-            return Verify(snapshot, BigInteger.Zero) == RelayResultReason.Succeed;
+            return Verify(blockchain, snapshot, BigInteger.Zero) == RelayResultReason.Succeed;
         }
 
         public virtual RelayResultReason VerifyForEachBlock(StoreView snapshot, BigInteger totalSenderFeeFromPool)
@@ -287,7 +287,8 @@ namespace Neo.Network.P2P.Payloads
             return RelayResultReason.Succeed;
         }
 
-        public virtual RelayResultReason Verify(StoreView snapshot, BigInteger totalSenderFeeFromPool)
+        public virtual RelayResultReason Verify(Blockchain blockchain, StoreView snapshot,
+            BigInteger totalSenderFeeFromPool)
         {
             RelayResultReason result = VerifyForEachBlock(snapshot, totalSenderFeeFromPool);
             if (result != RelayResultReason.Succeed) return result;
@@ -295,7 +296,7 @@ namespace Neo.Network.P2P.Payloads
             if (size > MaxTransactionSize) return RelayResultReason.Invalid;
             long net_fee = NetworkFee - size * NativeContract.Policy.GetFeePerByte(snapshot);
             if (net_fee < 0) return RelayResultReason.InsufficientFunds;
-            if (!this.VerifyWitnesses(snapshot, net_fee)) return RelayResultReason.Invalid;
+            if (!this.VerifyWitnesses(blockchain, snapshot, net_fee)) return RelayResultReason.Invalid;
             return RelayResultReason.Succeed;
         }
 

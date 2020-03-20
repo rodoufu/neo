@@ -2,8 +2,6 @@ using Akka.TestKit.Xunit2;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Neo.Consensus;
-using Neo.IO;
-using Neo.Ledger;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract.Native;
 using Neo.Wallets;

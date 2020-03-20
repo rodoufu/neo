@@ -201,7 +201,7 @@ namespace Neo.Ledger
                 if (block.Index <= Height) continue;
                 if (block.Index != Height + 1)
                     throw new InvalidOperationException();
-                if (verify && !block.Verify(currentSnapshot))
+                if (verify && !block.Verify(this, currentSnapshot))
                     throw new InvalidOperationException();
                 Persist(block, context);
                 SaveHeaderHashList();
@@ -235,7 +235,8 @@ namespace Neo.Ledger
                 // First remove the tx if it is unverified in the pool.
                 MemPool.TryRemoveUnVerified(tx.Hash, out _);
                 // Verify the the transaction
-                if (tx.Verify(currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(tx.Sender)) != RelayResultReason.Succeed)
+                if (tx.Verify(this, currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(tx.Sender))
+                    != RelayResultReason.Succeed)
                     continue;
                 // Add to the memory pool
                 MemPool.TryAdd(tx.Hash, tx);
@@ -258,7 +259,7 @@ namespace Neo.Ledger
             }
             if (block.Index == header_index.Count)
             {
-                if (!block.Verify(currentSnapshot))
+                if (!block.Verify(this, currentSnapshot))
                     return RelayResultReason.Invalid;
             }
             else
@@ -326,7 +327,7 @@ namespace Neo.Ledger
 
         private RelayResultReason OnNewConsensus(ConsensusPayload payload)
         {
-            if (!payload.Verify(currentSnapshot)) return RelayResultReason.Invalid;
+            if (!payload.Verify(this, currentSnapshot)) return RelayResultReason.Invalid;
             consensusServiceActor?.Tell(payload);
             ConsensusRelayCache.Add(payload);
             localNodeActor.Tell(new LocalNode.RelayDirectly { Inventory = payload });
@@ -341,7 +342,7 @@ namespace Neo.Ledger
                 {
                     if (header.Index - 1 >= header_index.Count) break;
                     if (header.Index < header_index.Count) continue;
-                    if (!header.Verify(snapshot)) break;
+                    if (!header.Verify(this, snapshot)) break;
                     header_index.Add(header.Hash);
                     snapshot.Blocks.Add(header.Hash, header.Trim());
                     snapshot.HeaderHashIndex.GetAndChange().Hash = header.Hash;
@@ -362,7 +363,8 @@ namespace Neo.Ledger
             else if (!MemPool.CanTransactionFitInPool(transaction))
                 reason = RelayResultReason.OutOfMemory;
             else
-                reason = transaction.Verify(currentSnapshot, MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
+                reason = transaction.Verify(this, currentSnapshot,
+                    MemPool.SendersFeeMonitor.GetSenderFee(transaction.Sender));
 
             if (reason == RelayResultReason.Succeed)
             {
@@ -390,7 +392,8 @@ namespace Neo.Ledger
                 snapshot.PersistingBlock = block;
                 if (block.Index > 0)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.System, null, snapshot, 0, true))
+                    using (ApplicationEngine engine = new ApplicationEngine(this, TriggerType.System,
+                        null, snapshot, 0, true))
                     {
                         engine.LoadScript(onPersistNativeContractScript);
                         if (engine.Execute() != VMState.HALT) throw new InvalidOperationException();
@@ -410,7 +413,8 @@ namespace Neo.Ledger
 
                     snapshot.Transactions.Add(tx.Hash, state);
 
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, tx, snapshot.Clone(), tx.SystemFee))
+                    using (ApplicationEngine engine = new ApplicationEngine(this, TriggerType.Application,
+                        tx, snapshot.Clone(), tx.SystemFee))
                     {
                         engine.LoadScript(tx.Script);
                         state.VMState = engine.Execute();

@@ -5,19 +5,22 @@ using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.VM.Types;
 using System;
+using Neo.Ledger;
 
 namespace Neo.UnitTests.Extensions
 {
     public static class NativeContractExtensions
     {
-        public static StackItem Call(this NativeContract contract, StoreView snapshot, string method, params ContractParameter[] args)
+        public static StackItem Call(this NativeContract contract, Blockchain blockchain, StoreView snapshot, string method, params ContractParameter[] args)
         {
-            return Call(contract, snapshot, null, method, args);
+            return Call(contract, blockchain, snapshot, null, method, args);
         }
 
-        public static StackItem Call(this NativeContract contract, StoreView snapshot, IVerifiable container, string method, params ContractParameter[] args)
+        public static StackItem Call(this NativeContract contract, Blockchain blockchain, StoreView snapshot,
+            IVerifiable container, string method, params ContractParameter[] args)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, container, snapshot, 0, true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, container, snapshot, 0,
+                true);
 
             engine.LoadScript(contract.Script);
 

@@ -129,13 +129,15 @@ namespace Neo.UnitTests.SmartContract
         public void TestVerifyWitnesses()
         {
             var testBlockchain = new TestBlockchain();
-            var snapshot1 = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot1 = blockchain.GetSnapshot();
             UInt256 index1 = UInt256.Parse("0xa400ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff01");
             snapshot1.Blocks.Add(index1, new TrimmedBlock());
             snapshot1.Blocks.Delete(index1);
-            Assert.AreEqual(false, Neo.SmartContract.Helper.VerifyWitnesses(new Header() { PrevHash = index1 }, snapshot1, 100));
+            Assert.AreEqual(false, Neo.SmartContract.Helper.VerifyWitnesses(new
+                Header() { PrevHash = index1 }, blockchain, snapshot1, 100));
 
-            var snapshot2 = testBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot2 = blockchain.GetSnapshot();
             UInt256 index2 = UInt256.Parse("0xa400ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff01");
             TrimmedBlock block2 = new TrimmedBlock();
             block2.NextConsensus = UInt160.Zero;
@@ -144,16 +146,18 @@ namespace Neo.UnitTests.SmartContract
 
             snapshot2.Contracts.Add(UInt160.Zero, new ContractState());
             snapshot2.Contracts.Delete(UInt160.Zero);
-            Assert.AreEqual(false, Neo.SmartContract.Helper.VerifyWitnesses(header2, snapshot2, 100));
+            Assert.AreEqual(false, Neo.SmartContract.Helper.VerifyWitnesses(header2, blockchain,
+                snapshot2, 100));
 
-            var snapshot3 = testBlockchain.Container.Blockchain.GetSnapshot();
+            var snapshot3 = blockchain.GetSnapshot();
             UInt256 index3 = UInt256.Parse("0xa400ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff01");
             TrimmedBlock block3 = new TrimmedBlock();
             block3.NextConsensus = UInt160.Zero;
             snapshot3.Blocks.Add(index3, block3);
             Header header3 = new Header() { PrevHash = index3, Witness = new Witness { VerificationScript = new byte[0] } };
             snapshot3.Contracts.Add(UInt160.Zero, new ContractState());
-            Assert.AreEqual(false, Neo.SmartContract.Helper.VerifyWitnesses(header3, snapshot3, 100));
+            Assert.AreEqual(false, Neo.SmartContract.Helper.VerifyWitnesses(header3, blockchain,
+                snapshot3, 100));
         }
     }
 }

@@ -14,12 +14,20 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
     public class UT_Nep5Token
     {
         protected const byte Prefix_TotalSupply = 11;
+        private TestBlockchain testBlockchain;
+
+        [TestInitialize]
+        public void TestSetup()
+        {
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
+        }
 
         [TestMethod]
         public void TestTotalSupply()
         {
-            var testBlockchain = new TestBlockchain();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             TestNep5Token test = new TestNep5Token();
             StorageItem item = new StorageItem
@@ -39,7 +47,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
             key.Id = test.Id;
 
             snapshot.Storages.Add(key, item);
-            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
+            ApplicationEngine ae = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot,
+                0);
             StackItem stackItem = test.TotalSupply(ae, null);
             stackItem.GetBigInteger().Should().Be(1);
         }
@@ -47,8 +56,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestTotalSupplyDecimal()
         {
-            var testBlockchain = new TestBlockchain();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             TestNep5Token test = new TestNep5Token();
             BigInteger totalSupply = 100_000_000;
@@ -72,7 +81,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
 
             snapshot.Storages.Add(key, item);
 
-            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, snapshot, 0);
+            ApplicationEngine ae = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot,
+                0);
             StackItem stackItem = test.TotalSupply(ae, null);
             stackItem.GetBigInteger().Should().Be(10_000_000_000_000_000);
         }

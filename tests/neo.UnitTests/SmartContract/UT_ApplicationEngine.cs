@@ -30,8 +30,10 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestLog()
         {
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
-            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot, 0,
+                true);
             ApplicationEngine.Log += Test_Log1;
             string logMessage = "TestMessage";
 
@@ -55,8 +57,10 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestNotify()
         {
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
-            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot, 0,
+                true);
             ApplicationEngine.Notify += Test_Notify1;
             StackItem notifyItem = "TestItem";
 
@@ -80,9 +84,11 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestDisposable()
         {
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
             var m = new Mock<IDisposable>();
-            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot, 0,
+                true);
             engine.AddDisposable(m.Object).Should().Be(m.Object);
             Action action = () => engine.Dispose();
             action.Should().NotThrow();
@@ -111,9 +117,10 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestCreateDummyBlock()
         {
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
             byte[] SyscallSystemRuntimeCheckWitnessHash = new byte[] { 0x68, 0xf8, 0x27, 0xec, 0x8c };
-            ApplicationEngine.Run(SyscallSystemRuntimeCheckWitnessHash, snapshot);
+            ApplicationEngine.Run(blockchain, SyscallSystemRuntimeCheckWitnessHash, snapshot);
             snapshot.PersistingBlock.Version.Should().Be(0);
             snapshot.PersistingBlock.PrevHash.Should().Be(Blockchain.GenesisBlock.Hash);
             snapshot.PersistingBlock.MerkleRoot.Should().Be(new UInt256());
@@ -122,14 +129,18 @@ namespace Neo.UnitTests.SmartContract
         [TestMethod]
         public void TestOnSysCall()
         {
-            InteropDescriptor descriptor = new InteropDescriptor("System.Blockchain.GetHeight", Blockchain_GetHeight, 0_00000400, TriggerType.Application, CallFlags.None);
-            TestApplicationEngine engine = new TestApplicationEngine(TriggerType.Application, null, null, 0);
+            var blockchain = testBlockchain.Container.Blockchain;
+            InteropDescriptor descriptor = new InteropDescriptor("System.Blockchain.GetHeight",
+                Blockchain_GetHeight, 0_00000400, TriggerType.Application, CallFlags.None);
+            TestApplicationEngine engine = new TestApplicationEngine(blockchain, TriggerType.Application,
+                null, null, 0);
             byte[] SyscallSystemRuntimeCheckWitnessHash = new byte[] { 0x68, 0xf8, 0x27, 0xec, 0x8c };
             engine.LoadScript(SyscallSystemRuntimeCheckWitnessHash);
             engine.GetOnSysCall(descriptor.Hash).Should().BeFalse();
 
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
-            engine = new TestApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            var snapshot = blockchain.GetSnapshot();
+            engine = new TestApplicationEngine(blockchain, TriggerType.Application, null, snapshot, 0,
+                true);
             engine.LoadScript(SyscallSystemRuntimeCheckWitnessHash);
             engine.GetOnSysCall(descriptor.Hash).Should().BeTrue();
         }
@@ -143,7 +154,9 @@ namespace Neo.UnitTests.SmartContract
 
     public class TestApplicationEngine : ApplicationEngine
     {
-        public TestApplicationEngine(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas, bool testMode = false) : base(trigger, container, snapshot, gas, testMode)
+        public TestApplicationEngine(Blockchain blockchain, TriggerType trigger, IVerifiable container,
+            StoreView snapshot, long gas, bool testMode = false) : base(blockchain, trigger, container, snapshot, gas,
+            testMode)
         {
         }
 

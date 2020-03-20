@@ -55,7 +55,8 @@ namespace Neo.Consensus
 
         private bool AddTransaction(Transaction tx, bool verify, IActorRef self, IUntypedActorContext ctx)
         {
-            if (verify && tx.Verify(context.Snapshot, context.SendersFeeMonitor.GetSenderFee(tx.Sender)) != RelayResultReason.Succeed)
+            if (verify && tx.Verify(blockchain, context.Snapshot, context.SendersFeeMonitor.GetSenderFee(tx.Sender))
+                != RelayResultReason.Succeed)
             {
                 Log($"Invalid transaction: {tx.Hash}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
                 RequestChangeView(ChangeViewReason.TxInvalid, self, ctx);
@@ -577,7 +578,7 @@ namespace Neo.Consensus
 
         private bool ReverifyAndProcessPayload(ConsensusPayload payload, IActorRef self, IUntypedActorContext ctx)
         {
-            if (!payload.Verify(context.Snapshot)) return false;
+            if (!payload.Verify(blockchain, context.Snapshot)) return false;
             OnConsensusPayload(payload, self, ctx);
             return true;
         }

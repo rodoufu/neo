@@ -7,6 +7,7 @@ using Neo.SmartContract;
 using Neo.SmartContract.Native;
 using System;
 using System.IO;
+using Neo.Ledger;
 
 namespace Neo.Network.P2P.Payloads
 {
@@ -118,11 +119,11 @@ namespace Neo.Network.P2P.Payloads
             writer.WriteVarBytes(Data);
         }
 
-        public bool Verify(StoreView snapshot)
+        public bool Verify(Blockchain blockchain, StoreView snapshot)
         {
             if (BlockIndex <= snapshot.Height)
                 return false;
-            return this.VerifyWitnesses(snapshot, 0_02000000);
+            return this.VerifyWitnesses(blockchain, snapshot, 0_02000000);
         }
     }
 }

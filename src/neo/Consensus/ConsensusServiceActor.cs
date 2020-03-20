@@ -469,7 +469,7 @@ namespace Neo.Consensus
 
             private bool ReverifyAndProcessPayload(ConsensusPayload payload)
             {
-                if (!payload.Verify(consensusService.context.Snapshot)) return false;
+                if (!payload.Verify(consensusService.blockchain, consensusService.context.Snapshot)) return false;
                 OnConsensusPayload(payload);
                 return true;
             }
@@ -526,7 +526,8 @@ namespace Neo.Consensus
             private bool AddTransaction(Transaction tx, bool verify)
             {
                 var context = consensusService.context;
-                if (verify && tx.Verify(context.Snapshot, context.SendersFeeMonitor.GetSenderFee(tx.Sender)) != RelayResultReason.Succeed)
+                if (verify && tx.Verify(consensusService.blockchain, context.Snapshot,
+                        context.SendersFeeMonitor.GetSenderFee(tx.Sender)) != RelayResultReason.Succeed)
                 {
                     consensusService.Log($"Invalid transaction: {tx.Hash}{Environment.NewLine}{tx.ToArray().ToHexString()}", LogLevel.Warning);
                     RequestChangeView(ChangeViewReason.TxInvalid);

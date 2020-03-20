@@ -88,7 +88,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         {
             var walletA = TestUtils.GenerateTestWallet();
             var walletB = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             using (var unlockA = walletA.Unlock("123"))
             using (var unlockB = walletB.Unlock("123"))
@@ -124,7 +125,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // Make transaction
 
-                var tx = walletA.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
+                var tx = walletA.MakeTransaction(blockchain, new TransferOutput[]
                 {
                     new TransferOutput()
                     {
@@ -147,14 +148,15 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // Fast check
 
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
 
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                        tx, snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);
@@ -176,7 +178,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContractDetailed()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             using (var unlock = wallet.Unlock("123"))
             {
@@ -202,7 +205,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 // Make transaction
 
                 // self-transfer of 1e-8 GAS
-                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain, new TransferOutput[]
+                var tx = wallet.MakeTransaction(blockchain, new TransferOutput[]
                 {
                     new TransferOutput()
                     {
@@ -236,14 +239,15 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // Fast check
 
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
 
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                        tx, snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);
@@ -293,7 +297,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_Global()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -339,7 +344,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                var tx = wallet.MakeTransaction(blockchain,
                     script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
@@ -358,13 +363,14 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 tx.Witnesses.Length.Should().Be(1);
 
                 // Fast check
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification, tx,
+                        snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);
@@ -387,7 +393,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CurrentHash_GAS()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -434,7 +441,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                var tx = wallet.MakeTransaction(blockchain,
                     script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
@@ -453,13 +460,14 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 tx.Witnesses.Length.Should().Be(1);
 
                 // Fast check
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                        tx, snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);
@@ -482,7 +490,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CalledByEntry_Plus_GAS()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -525,14 +534,15 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                     Account = acc.ScriptHash,
                     // This combination is supposed to actually be an OR,
                     // where it's valid in both Entry and also for Custom hash provided (in any execution level)
-                    // it would be better to test this in the future including situations where a deeper call level uses this custom witness successfully
+                    // it would be better to test this in the future including situations where a deeper call level
+                    // uses this custom witness successfully
                     Scopes = WitnessScope.CustomContracts | WitnessScope.CalledByEntry,
                     AllowedContracts = new[] { NativeContract.GAS.Hash }
                 } };
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                var tx = wallet.MakeTransaction(blockchain,
                     script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
@@ -551,13 +561,14 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 tx.Witnesses.Length.Should().Be(1);
 
                 // Fast check
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                        tx, snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);
@@ -639,7 +650,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CurrentHash_NEO_GAS()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -686,7 +698,7 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
+                var tx = wallet.MakeTransaction(blockchain,
                     script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
@@ -710,13 +722,14 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 tx.Cosigners.Length.Should().Be(1);
 
                 // Fast check
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                        tx, snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);
@@ -998,7 +1011,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
             cosigner.Scopes.Should().Be(WitnessScope.Global);
 
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
+            var blockchain = testBlockchain.Container.Blockchain;
+            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -1043,8 +1057,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
-                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(blockchain, script, acc.ScriptHash,
+                    new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -1062,13 +1076,14 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 tx.Witnesses.Length.Should().Be(1);
 
                 // Fast check
-                Assert.IsTrue(tx.VerifyWitnesses(snapshot, tx.NetworkFee));
+                Assert.IsTrue(tx.VerifyWitnesses(blockchain, snapshot, tx.NetworkFee));
 
                 // Check
                 long verificationGas = 0;
                 foreach (var witness in tx.Witnesses)
                 {
-                    using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, tx, snapshot, tx.NetworkFee, false))
+                    using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                        tx, snapshot, tx.NetworkFee, false))
                     {
                         engine.LoadScript(witness.VerificationScript);
                         engine.LoadScript(witness.InvocationScript);

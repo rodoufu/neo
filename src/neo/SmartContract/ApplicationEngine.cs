@@ -12,6 +12,7 @@ namespace Neo.SmartContract
 {
     public partial class ApplicationEngine : ExecutionEngine
     {
+        private readonly Blockchain blockchain;
         public static event EventHandler<NotifyEventArgs> Notify;
         public static event EventHandler<LogEventArgs> Log;
 
@@ -31,8 +32,10 @@ namespace Neo.SmartContract
         public IReadOnlyList<NotifyEventArgs> Notifications => notifications;
         internal Dictionary<UInt160, int> InvocationCounter { get; } = new Dictionary<UInt160, int>();
 
-        public ApplicationEngine(TriggerType trigger, IVerifiable container, StoreView snapshot, long gas, bool testMode = false)
+        public ApplicationEngine(Blockchain blockchain, TriggerType trigger, IVerifiable container, StoreView snapshot,
+            long gas, bool testMode = false)
         {
+            this.blockchain = blockchain;
             this.gas_amount = GasFree + gas;
             this.testMode = testMode;
             this.Trigger = trigger;
@@ -111,11 +114,12 @@ namespace Neo.SmartContract
             };
         }
 
-        public static ApplicationEngine Run(byte[] script, StoreView snapshot, IVerifiable container = null,
+        public static ApplicationEngine Run(Blockchain blockchain, byte[] script, StoreView snapshot, IVerifiable container = null,
             Block persistingBlock = null, bool testMode = false, long extraGAS = default)
         {
             snapshot.PersistingBlock = persistingBlock ?? snapshot.PersistingBlock ?? CreateDummyBlock(snapshot);
-            ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, container, snapshot, extraGAS, testMode);
+            ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Application, container, snapshot,
+                extraGAS, testMode);
             engine.LoadScript(script);
             engine.Execute();
             return engine;
@@ -126,7 +130,7 @@ namespace Neo.SmartContract
         {
             using (SnapshotView snapshot = blockchain.GetSnapshot())
             {
-                return Run(script, snapshot, container, persistingBlock, testMode, extraGAS);
+                return Run(blockchain, script, snapshot, container, persistingBlock, testMode, extraGAS);
             }
         }
 

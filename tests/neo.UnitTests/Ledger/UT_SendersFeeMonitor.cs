@@ -12,14 +12,25 @@ namespace Neo.UnitTests.Ledger
     [TestClass]
     public class UT_SendersFeeMonitor
     {
-        private Transaction CreateTransactionWithFee(long networkFee, long systemFee)
+        private TestBlockchain testBlockchain;
+
+        [TestInitialize]
+        public void TestSetup()
+        {
+            testBlockchain = new TestBlockchain();
+            testBlockchain.InitializeMockNeoSystem();
+        }
+
+        private Transaction CreateTransactionWithFee(Blockchain blockchain, long networkFee, long systemFee)
         {
             Random random = new Random();
             var randomBytes = new byte[16];
             random.NextBytes(randomBytes);
             Mock<Transaction> mock = new Mock<Transaction>();
-            mock.Setup(p => p.VerifyForEachBlock(It.IsAny<StoreView>(), It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
-            mock.Setup(p => p.Verify(It.IsAny<StoreView>(), It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
+            mock.Setup(p => p.VerifyForEachBlock(It.IsAny<StoreView>(),
+                It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
+            mock.Setup(p => p.Verify(blockchain, It.IsAny<StoreView>(),
+                It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
             mock.Object.Script = randomBytes;
             mock.Object.Sender = UInt160.Zero;
             mock.Object.NetworkFee = networkFee;
@@ -40,7 +51,8 @@ namespace Neo.UnitTests.Ledger
         [TestMethod]
         public void TestMemPoolSenderFee()
         {
-            Transaction transaction = CreateTransactionWithFee(1, 2);
+            Transaction transaction = CreateTransactionWithFee(testBlockchain.Container.Blockchain, 1,
+                2);
             SendersFeeMonitor sendersFeeMonitor = new SendersFeeMonitor();
             sendersFeeMonitor.GetSenderFee(transaction.Sender).Should().Be(0);
             sendersFeeMonitor.AddSenderFee(transaction);

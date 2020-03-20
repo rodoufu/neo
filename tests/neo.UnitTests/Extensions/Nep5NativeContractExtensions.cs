@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Neo.Ledger;
 
 namespace Neo.UnitTests.Extensions
 {
@@ -41,9 +42,10 @@ namespace Neo.UnitTests.Extensions
             public void SerializeUnsigned(BinaryWriter writer) { }
         }
 
-        public static bool Transfer(this NativeContract contract, StoreView snapshot, byte[] from, byte[] to, BigInteger amount, bool signFrom)
+        public static bool Transfer(this NativeContract contract, Blockchain blockchain, StoreView snapshot,
+            byte[] from, byte[] to, BigInteger amount, bool signFrom)
         {
-            var engine = new ApplicationEngine(TriggerType.Application,
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application,
                 new ManualWitness(signFrom ? new UInt160(from) : null), snapshot, 0, true);
 
             engine.LoadScript(contract.Script);
@@ -68,9 +70,10 @@ namespace Neo.UnitTests.Extensions
             return result.ToBoolean();
         }
 
-        public static string[] SupportedStandards(this NativeContract contract)
+        public static string[] SupportedStandards(this NativeContract contract, Blockchain blockchain)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, null, null, 0, testMode: true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, null,
+                0, testMode: true);
 
             engine.LoadScript(contract.Script);
 
@@ -90,9 +93,10 @@ namespace Neo.UnitTests.Extensions
                 .ToArray();
         }
 
-        public static BigInteger TotalSupply(this NativeContract contract, StoreView snapshot)
+        public static BigInteger TotalSupply(this NativeContract contract, Blockchain blockchain, StoreView snapshot)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot, 0,
+                true);
 
             engine.LoadScript(contract.Script);
 
@@ -110,9 +114,11 @@ namespace Neo.UnitTests.Extensions
             return (result as VM.Types.Integer).GetBigInteger();
         }
 
-        public static BigInteger BalanceOf(this NativeContract contract, StoreView snapshot, byte[] account)
+        public static BigInteger BalanceOf(this NativeContract contract, Blockchain blockchain, StoreView snapshot,
+            byte[] account)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, null, snapshot, 0, true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, snapshot,
+                0, true);
 
             engine.LoadScript(contract.Script);
 
@@ -131,9 +137,10 @@ namespace Neo.UnitTests.Extensions
             return (result as VM.Types.Integer).GetBigInteger();
         }
 
-        public static BigInteger Decimals(this NativeContract contract)
+        public static BigInteger Decimals(this NativeContract contract, Blockchain blockchain)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, null, null, 0, testMode: true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, null,
+                0, testMode: true);
 
             engine.LoadScript(contract.Script);
 
@@ -151,9 +158,10 @@ namespace Neo.UnitTests.Extensions
             return (result as VM.Types.Integer).GetBigInteger();
         }
 
-        public static string Symbol(this NativeContract contract)
+        public static string Symbol(this NativeContract contract, Blockchain blockchain)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, null, null, 0, testMode: true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, null,
+                0, testMode: true);
 
             engine.LoadScript(contract.Script);
 
@@ -171,9 +179,10 @@ namespace Neo.UnitTests.Extensions
             return result.GetString();
         }
 
-        public static string Name(this NativeContract contract)
+        public static string Name(this NativeContract contract, Blockchain blockchain)
         {
-            var engine = new ApplicationEngine(TriggerType.Application, null, null, 0, testMode: true);
+            var engine = new ApplicationEngine(blockchain, TriggerType.Application, null, null,
+                0, testMode: true);
 
             engine.LoadScript(contract.Script);
 

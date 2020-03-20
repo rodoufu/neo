@@ -8,6 +8,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
+using Neo.Ledger;
 
 namespace Neo.SmartContract
 {
@@ -122,7 +123,8 @@ namespace Neo.SmartContract
             return new UInt160(Crypto.Hash160(script));
         }
 
-        internal static bool VerifyWitnesses(this IVerifiable verifiable, StoreView snapshot, long gas)
+        internal static bool VerifyWitnesses(this IVerifiable verifiable, Blockchain blockchain, StoreView snapshot,
+            long gas)
         {
             if (gas < 0) return false;
 
@@ -148,7 +150,8 @@ namespace Neo.SmartContract
                 {
                     if (hashes[i] != verifiable.Witnesses[i].ScriptHash) return false;
                 }
-                using (ApplicationEngine engine = new ApplicationEngine(TriggerType.Verification, verifiable, snapshot, gas))
+                using (ApplicationEngine engine = new ApplicationEngine(blockchain, TriggerType.Verification,
+                    verifiable, snapshot, gas))
                 {
                     engine.LoadScript(verification, CallFlags.ReadOnly);
                     engine.LoadScript(verifiable.Witnesses[i].InvocationScript, CallFlags.None);

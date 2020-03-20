@@ -238,10 +238,12 @@ namespace Neo.Wallets
                             using (ScriptBuilder sb2 = new ScriptBuilder())
                             {
                                 sb2.EmitAppCall(assetId, "balanceOf", account);
-                                using (ApplicationEngine engine = ApplicationEngine.Run(sb2.ToArray(), snapshot, testMode: true))
+                                using (ApplicationEngine engine = ApplicationEngine.Run(blockchain,
+                                    sb2.ToArray(), snapshot, testMode: true))
                                 {
                                     if (engine.State.HasFlag(VMState.FAULT))
-                                        throw new InvalidOperationException($"Execution for {assetId.ToString()}.balanceOf('{account.ToString()}' fault");
+                                        throw new InvalidOperationException(
+                                            $"Execution for {assetId}.balanceOf('{account}' fault");
                                     BigInteger value = engine.ResultStack.Pop().GetBigInteger();
                                     if (value.Sign > 0) balances.Add((account, value));
                                 }
@@ -276,7 +278,7 @@ namespace Neo.Wallets
                              Account = new UInt160(p.ToArray())
                          }).ToArray();
 
-                return MakeTransaction(snapshot, script, new TransactionAttribute[0], cosigners, balances_gas);
+                return MakeTransaction(blockchain, snapshot, script, new TransactionAttribute[0], cosigners, balances_gas);
             }
         }
 
@@ -297,11 +299,13 @@ namespace Neo.Wallets
             using (SnapshotView snapshot = blockchain.GetSnapshot())
             {
                 var balances_gas = accounts.Select(p => (Account: p, Value: NativeContract.GAS.BalanceOf(snapshot, p))).Where(p => p.Value.Sign > 0).ToList();
-                return MakeTransaction(snapshot, script, attributes ?? new TransactionAttribute[0], cosigners ?? new Cosigner[0], balances_gas);
+                return MakeTransaction(blockchain, snapshot, script, attributes ?? new TransactionAttribute[0],
+                    cosigners ?? new Cosigner[0], balances_gas);
             }
         }
 
-        private Transaction MakeTransaction(StoreView snapshot, byte[] script, TransactionAttribute[] attributes, Cosigner[] cosigners, List<(UInt160 Account, BigInteger Value)> balances_gas)
+        private Transaction MakeTransaction(Blockchain blockchain, StoreView snapshot, byte[] script,
+            TransactionAttribute[] attributes, Cosigner[] cosigners, List<(UInt160 Account, BigInteger Value)> balances_gas)
         {
             Random rand = new Random();
             foreach (var (account, value) in balances_gas)
@@ -317,7 +321,8 @@ namespace Neo.Wallets
                     Cosigners = cosigners
                 };
                 // will try to execute 'transfer' script to check if it works
-                using (ApplicationEngine engine = ApplicationEngine.Run(script, snapshot.Clone(), tx, testMode: true))
+                using (ApplicationEngine engine = ApplicationEngine.Run(blockchain, script, snapshot.Clone(), tx,
+                    testMode: true))
                 {
                     if (engine.State.HasFlag(VMState.FAULT))
                         throw new InvalidOperationException($"Failed execution for '{script.ToHexString()}'");

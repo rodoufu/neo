@@ -25,11 +25,13 @@ namespace Neo.UnitTests.SmartContract.Native
         [TestMethod]
         public void TestInitialize()
         {
-            ApplicationEngine ae = new ApplicationEngine(TriggerType.Application, null, null, 0);
+            var blockchain = testBlockchain.Container.Blockchain;
+            ApplicationEngine ae = new ApplicationEngine(blockchain, TriggerType.Application, null,
+                null, 0);
             TestNativeContract pc = new TestNativeContract();
             pc.Initialize(ae).Should().BeTrue();
 
-            ae = new ApplicationEngine(TriggerType.System, null, null, 0);
+            ae = new ApplicationEngine(blockchain, TriggerType.System, null, null, 0);
             Action action = () => pc.Initialize(ae);
             action.Should().Throw<InvalidOperationException>();
         }
@@ -37,8 +39,9 @@ namespace Neo.UnitTests.SmartContract.Native
         [TestMethod]
         public void TestInvoke()
         {
-            ApplicationEngine engine1 = new ApplicationEngine(
-                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            var blockchain = testBlockchain.Container.Blockchain;
+            ApplicationEngine engine1 = new ApplicationEngine(blockchain, TriggerType.Application, null,
+                blockchain.GetSnapshot(), 0);
             TestNativeContract testNativeContract = new TestNativeContract();
 
             ScriptBuilder sb1 = new ScriptBuilder();
@@ -47,8 +50,8 @@ namespace Neo.UnitTests.SmartContract.Native
             engine1.LoadScript(sb1.ToArray());
             testNativeContract.Invoke(engine1).Should().BeFalse();
 
-            ApplicationEngine engine2 = new ApplicationEngine(
-                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            ApplicationEngine engine2 = new ApplicationEngine(blockchain, TriggerType.Application, null,
+                blockchain.GetSnapshot(), 0);
 
             ScriptBuilder sb2 = new ScriptBuilder();
             sb2.EmitSysCall("test".ToInteropMethodHash());
@@ -70,16 +73,17 @@ namespace Neo.UnitTests.SmartContract.Native
         [TestMethod]
         public void TestOnPersistWithArgs()
         {
-            ApplicationEngine engine1 = new ApplicationEngine(
-                TriggerType.Application, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            var blockchain = testBlockchain.Container.Blockchain;
+            ApplicationEngine engine1 = new ApplicationEngine(blockchain, TriggerType.Application, null,
+                blockchain.GetSnapshot(), 0);
             TestNativeContract testNativeContract = new TestNativeContract();
             VMArray args = new VMArray();
 
             VM.Types.Boolean result1 = new VM.Types.Boolean(false);
             testNativeContract.TestOnPersist(engine1, args).Should().Be(result1);
 
-            ApplicationEngine engine2 = new ApplicationEngine(
-                TriggerType.System, null, testBlockchain.Container.Blockchain.GetSnapshot(), 0);
+            ApplicationEngine engine2 = new ApplicationEngine(blockchain, TriggerType.System, null,
+                blockchain.GetSnapshot(), 0);
             VM.Types.Boolean result2 = new VM.Types.Boolean(true);
             testNativeContract.TestOnPersist(engine2, args).Should().Be(result2);
         }

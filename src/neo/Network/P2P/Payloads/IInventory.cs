@@ -1,3 +1,4 @@
+using Neo.Ledger;
 using Neo.Persistence;
 
 namespace Neo.Network.P2P.Payloads
@@ -8,6 +9,6 @@ namespace Neo.Network.P2P.Payloads
 
         InventoryType InventoryType { get; }
 
-        bool Verify(StoreView snapshot);
+        bool Verify(Blockchain blockchain, StoreView snapshot);
     }
 }

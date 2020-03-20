@@ -78,8 +78,10 @@ namespace Neo.UnitTests.Ledger
             var randomBytes = new byte[16];
             random.NextBytes(randomBytes);
             Mock<Transaction> mock = new Mock<Transaction>();
-            mock.Setup(p => p.VerifyForEachBlock(It.IsAny<StoreView>(), It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
-            mock.Setup(p => p.Verify(It.IsAny<StoreView>(), It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
+            mock.Setup(p => p.VerifyForEachBlock(It.IsAny<StoreView>(),
+                It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
+            mock.Setup(p => p.Verify(testBlockchain.Container.Blockchain, It.IsAny<StoreView>(),
+                It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
             mock.Object.Script = randomBytes;
             mock.Object.Sender = UInt160.Zero;
             mock.Object.NetworkFee = fee;
@@ -103,8 +105,13 @@ namespace Neo.UnitTests.Ledger
             random.NextBytes(randomBytes);
             Mock<Transaction> mock = new Mock<Transaction>();
             UInt160 sender = UInt160.Zero;
-            mock.Setup(p => p.VerifyForEachBlock(It.IsAny<StoreView>(), It.IsAny<BigInteger>())).Returns((StoreView snapshot, BigInteger amount) => NativeContract.GAS.BalanceOf(snapshot, sender) >= amount + fee ? RelayResultReason.Succeed : RelayResultReason.InsufficientFunds);
-            mock.Setup(p => p.Verify(It.IsAny<StoreView>(), It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
+            mock.Setup(p => p.VerifyForEachBlock(It.IsAny<StoreView>(),
+                It.IsAny<BigInteger>()))
+                .Returns((StoreView snapshot, BigInteger amount) =>
+                    NativeContract.GAS.BalanceOf(snapshot, sender) >= amount + fee ? RelayResultReason.Succeed
+                        : RelayResultReason.InsufficientFunds);
+            mock.Setup(p => p.Verify(testBlockchain.Container.Blockchain, It.IsAny<StoreView>(),
+                It.IsAny<BigInteger>())).Returns(RelayResultReason.Succeed);
             mock.Object.Script = randomBytes;
             mock.Object.Sender = sender;
             mock.Object.NetworkFee = fee;
@@ -229,9 +236,11 @@ namespace Neo.UnitTests.Ledger
             SnapshotView snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             BigInteger balance = NativeContract.GAS.BalanceOf(snapshot, sender);
 
-            ApplicationEngine applicationEngine = new ApplicationEngine(TriggerType.All, block, snapshot, (long)balance);
+            ApplicationEngine applicationEngine = new ApplicationEngine(testBlockchain.Container.Blockchain,
+                TriggerType.All, block, snapshot, (long)balance);
             NativeContract.GAS.Burn(applicationEngine, sender, balance);
-            NativeContract.GAS.Mint(applicationEngine, sender, txFee * 30); // Set the balance to meet 30 txs only
+            // Set the balance to meet 30 txs only
+            NativeContract.GAS.Mint(applicationEngine, sender, txFee * 30);
 
             // Persist block and reverify all the txs in mempool, but half of the txs will be discarded
             _unit.UpdatePoolForBlockPersisted(block, snapshot);

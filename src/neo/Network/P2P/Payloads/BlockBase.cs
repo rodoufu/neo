@@ -7,6 +7,7 @@ using Neo.Wallets;
 using System;
 using System.IO;
 using System.Linq;
+using Neo.Ledger;
 
 namespace Neo.Network.P2P.Payloads
 {
@@ -41,7 +42,7 @@ namespace Neo.Network.P2P.Payloads
             sizeof(uint) +       //Index
             UInt160.Length +     //NextConsensus
             1 +                  //Witness array count
-            Witness.Size;        //Witness   
+            Witness.Size;        //Witness
 
         Witness[] IVerifiable.Witnesses
         {
@@ -124,14 +125,13 @@ namespace Neo.Network.P2P.Payloads
             Witness = ((JArray)json["witnesses"]).Select(p => Witness.FromJson(p)).FirstOrDefault();
         }
 
-        public virtual bool Verify(StoreView snapshot)
+        public virtual bool Verify(Blockchain blockchain, StoreView snapshot)
         {
             Header prev_header = snapshot.GetHeader(PrevHash);
             if (prev_header == null) return false;
             if (prev_header.Index + 1 != Index) return false;
             if (prev_header.Timestamp >= Timestamp) return false;
-            if (!this.VerifyWitnesses(snapshot, 1_00000000)) return false;
-            return true;
+            return this.VerifyWitnesses(blockchain, snapshot, 1_00000000);
         }
     }
 }
