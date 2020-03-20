@@ -17,7 +17,6 @@ namespace Neo.UnitTests
 
             // Ensure that blockchain is loaded
             _neoSystem = _container.ResolveNeoSystem(_container.Blockchain.Store);
-            var _snapshot = _container.Blockchain.GetSnapshot();
         }
 
         public void InitializeMockNeoSystem()
