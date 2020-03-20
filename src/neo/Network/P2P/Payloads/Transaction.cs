@@ -63,7 +63,9 @@ namespace Neo.Network.P2P.Payloads
 
         /// <summary>
         /// The <c>NetworkFee</c> for the transaction divided by its <c>Size</c>.
-        /// <para>Note that this property must be used with care. Getting the value of this property multiple times will return the same result. The value of this property can only be obtained after the transaction has been completely built (no longer modified).</para>
+        /// <para>Note that this property must be used with care. Getting the value of this property multiple times
+        /// will return the same result. The value of this property can only be obtained after the transaction has
+        /// been completely built (no longer modified).</para>
         /// </summary>
         public long FeePerByte => NetworkFee / Size;
 

@@ -88,7 +88,8 @@ namespace Neo.UnitTests.SmartContract.Native
         public void TestTestCall()
         {
             TestNativeContract testNativeContract = new TestNativeContract();
-            ApplicationEngine engine = testNativeContract.TestCall("System.Blockchain.GetHeight", 0);
+            ApplicationEngine engine = testNativeContract.TestCall(testBlockchain.Container.Blockchain,
+                "System.Blockchain.GetHeight", 0);
             engine.ResultStack.Should().BeEmpty();
         }
     }

@@ -49,7 +49,8 @@ namespace Neo.Wallets
             return CreateAccount(contract, new KeyPair(privateKey));
         }
 
-        private List<(UInt160 Account, BigInteger Value)> FindPayingAccounts(List<(UInt160 Account, BigInteger Value)> orderedAccounts, BigInteger amount)
+        private List<(UInt160 Account, BigInteger Value)> FindPayingAccounts(
+            List<(UInt160 Account, BigInteger Value)> orderedAccounts, BigInteger amount)
         {
             var result = new List<(UInt160 Account, BigInteger Value)>();
             BigInteger sum_balance = orderedAccounts.Select(p => p.Value).Sum();
@@ -112,13 +113,13 @@ namespace Neo.Wallets
             return GetAccount(Contract.CreateSignatureRedeemScript(pubkey).ToScriptHash());
         }
 
-        public BigDecimal GetAvailable(UInt160 asset_id)
+        public BigDecimal GetAvailable(Blockchain blockchain, UInt160 asset_id)
         {
             UInt160[] accounts = GetAccounts().Where(p => !p.WatchOnly).Select(p => p.ScriptHash).ToArray();
-            return GetBalance(asset_id, accounts);
+            return GetBalance(blockchain, asset_id, accounts);
         }
 
-        public BigDecimal GetBalance(UInt160 asset_id, params UInt160[] accounts)
+        public BigDecimal GetBalance(Blockchain blockchain, UInt160 asset_id, params UInt160[] accounts)
         {
             byte[] script;
             using (ScriptBuilder sb = new ScriptBuilder())
@@ -132,7 +133,8 @@ namespace Neo.Wallets
                 sb.EmitAppCall(asset_id, "decimals");
                 script = sb.ToArray();
             }
-            using ApplicationEngine engine = ApplicationEngine.Run(script, extraGAS: 20000000L * accounts.Length);
+            using ApplicationEngine engine = ApplicationEngine.Run(blockchain, script,
+                extraGAS: 20000000L * accounts.Length);
             if (engine.State.HasFlag(VMState.FAULT))
                 return new BigDecimal(0, 0);
             byte decimals = (byte)engine.ResultStack.Pop().GetBigInteger();
@@ -278,7 +280,8 @@ namespace Neo.Wallets
             }
         }
 
-        public Transaction MakeTransaction(Blockchain blockchain, byte[] script, UInt160 sender = null, TransactionAttribute[] attributes = null, Cosigner[] cosigners = null)
+        public Transaction MakeTransaction(Blockchain blockchain, byte[] script, UInt160 sender = null,
+            TransactionAttribute[] attributes = null, Cosigner[] cosigners = null)
         {
             UInt160[] accounts;
             if (sender is null)

@@ -111,8 +111,8 @@ namespace Neo.SmartContract
             };
         }
 
-        public static ApplicationEngine Run(byte[] script, StoreView snapshot,
-            IVerifiable container = null, Block persistingBlock = null, bool testMode = false, long extraGAS = default)
+        public static ApplicationEngine Run(byte[] script, StoreView snapshot, IVerifiable container = null,
+            Block persistingBlock = null, bool testMode = false, long extraGAS = default)
         {
             snapshot.PersistingBlock = persistingBlock ?? snapshot.PersistingBlock ?? CreateDummyBlock(snapshot);
             ApplicationEngine engine = new ApplicationEngine(TriggerType.Application, container, snapshot, extraGAS, testMode);
@@ -121,10 +121,10 @@ namespace Neo.SmartContract
             return engine;
         }
 
-        public static ApplicationEngine Run(byte[] script, IVerifiable container = null, Block persistingBlock = null, bool testMode = false, long extraGAS = default)
+        public static ApplicationEngine Run(Blockchain blockchain, byte[] script, IVerifiable container = null,
+            Block persistingBlock = null, bool testMode = false, long extraGAS = default)
         {
-            // It's hacky
-            using (SnapshotView snapshot = NeoContainer.Instance.Blockchain.GetSnapshot())
+            using (SnapshotView snapshot = blockchain.GetSnapshot())
             {
                 return Run(script, snapshot, container, persistingBlock, testMode, extraGAS);
             }

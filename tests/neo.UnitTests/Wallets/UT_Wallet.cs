@@ -213,7 +213,8 @@ namespace Neo.UnitTests.Wallets
             .ToByteArray();
             snapshot.Commit();
 
-            wallet.GetAvailable(NativeContract.GAS.Hash).Should().Be(new BigDecimal(1000000000000, 8));
+            wallet.GetAvailable(testBlockchain.Container.Blockchain,
+                NativeContract.GAS.Hash).Should().Be(new BigDecimal(1000000000000, 8));
 
             entry.Value = new Nep5AccountState()
             {
@@ -245,8 +246,10 @@ namespace Neo.UnitTests.Wallets
             .ToByteArray();
             snapshot.Commit();
 
-            wallet.GetBalance(UInt160.Zero, new UInt160[] { account.ScriptHash }).Should().Be(new BigDecimal(0, 0));
-            wallet.GetBalance(NativeContract.GAS.Hash, new UInt160[] { account.ScriptHash }).Should().Be(new BigDecimal(1000000000000, 8));
+            wallet.GetBalance(testBlockchain.Container.Blockchain,UInt160.Zero,
+                new[] { account.ScriptHash }).Should().Be(new BigDecimal(0, 0));
+            wallet.GetBalance(testBlockchain.Container.Blockchain, NativeContract.GAS.Hash,
+                new[] { account.ScriptHash }).Should().Be(new BigDecimal(1000000000000, 8));
 
             entry.Value = new Nep5AccountState()
             {

@@ -13,11 +13,11 @@ namespace Neo.UnitTests
             _container = new NeoContainer();
             var memoryPool = _container.ResolveMemoryPool();
             var blockchainActor = _container.ResolveBlockchainActor(memoryPool, new MemoryStore());
-            var _ = blockchainActor.Path;
+            var _blockchainActorPath = blockchainActor.Path;
 
-            Console.WriteLine("initialize NeoSystem");
             // Ensure that blockchain is loaded
             _neoSystem = _container.ResolveNeoSystem(_container.Blockchain.Store);
+            var _snapshot = _container.Blockchain.GetSnapshot();
         }
 
         public void InitializeMockNeoSystem()

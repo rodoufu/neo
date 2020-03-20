@@ -131,12 +131,12 @@ namespace Neo.SmartContract.Native
             return new Array(engine.ReferenceCounter, SupportedStandards.Select(p => (StackItem)p));
         }
 
-        public ApplicationEngine TestCall(string operation, params object[] args)
+        public ApplicationEngine TestCall(Blockchain blockchain, string operation, params object[] args)
         {
             using (ScriptBuilder sb = new ScriptBuilder())
             {
                 sb.EmitAppCall(Hash, operation, args);
-                return ApplicationEngine.Run(sb.ToArray(), testMode: true);
+                return ApplicationEngine.Run(blockchain,sb.ToArray(), testMode: true);
             }
         }
     }

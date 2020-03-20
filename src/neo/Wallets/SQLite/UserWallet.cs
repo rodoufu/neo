@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
+using Neo.Ledger;
 
 namespace Neo.Wallets.SQLite
 {

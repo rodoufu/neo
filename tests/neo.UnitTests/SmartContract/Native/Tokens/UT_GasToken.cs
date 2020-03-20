@@ -146,13 +146,15 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetSysFeeAmount1()
         {
-            using (ApplicationEngine engine = NativeContract.GAS.TestCall("getSysFeeAmount", 2u))
+            using (ApplicationEngine engine = NativeContract.GAS.TestCall(testBlockchain.Container.Blockchain,
+                "getSysFeeAmount", 2u))
             {
                 engine.ResultStack.Peek().GetBigInteger().Should().Be(new BigInteger(0));
                 engine.ResultStack.Peek().GetType().Should().Be(typeof(Integer));
             }
 
-            using (ApplicationEngine engine = NativeContract.GAS.TestCall("getSysFeeAmount", 0u))
+            using (ApplicationEngine engine = NativeContract.GAS.TestCall(testBlockchain.Container.Blockchain,
+                "getSysFeeAmount", 0u))
             {
                 engine.ResultStack.Peek().GetBigInteger().Should().Be(new BigInteger(0));
             }

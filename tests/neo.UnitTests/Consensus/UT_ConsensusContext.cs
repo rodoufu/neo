@@ -63,7 +63,7 @@ namespace Neo.UnitTests.Consensus
             // Only one tx, is included
 
             var tx1 = CreateTransactionWithSize(200);
-            _context.EnsureMaxBlockSize(new Transaction[] { tx1 });
+            _context.EnsureMaxBlockSize(new[] {tx1});
             EnsureContext(_context, tx1);
 
             // All txs included
@@ -84,7 +84,8 @@ namespace Neo.UnitTests.Consensus
 
             var tx1 = CreateTransactionWithSize(200);
             var tx2 = CreateTransactionWithSize(256 * 1024);
-            _context.EnsureMaxBlockSize(new Transaction[] { tx1, tx2 });
+            Console.WriteLine("=>TestMaxBlockSize_Exceed");
+            _context.EnsureMaxBlockSize(new[] { tx1, tx2 });
             EnsureContext(_context, tx1);
 
             // Exceed txs number, just MaxTransactionsPerBlock included

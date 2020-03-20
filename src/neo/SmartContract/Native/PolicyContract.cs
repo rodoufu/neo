@@ -86,7 +86,35 @@ namespace Neo.SmartContract.Native
 
         public uint GetMaxBlockSize(StoreView snapshot)
         {
-            return BitConverter.ToUInt32(snapshot.Storages[CreateStorageKey(Prefix_MaxBlockSize)].Value, 0);
+            Console.WriteLine(snapshot == null
+                ? "=>GetMaxBlockSize snapshot null"
+                : "=>GetMaxBlockSize snapshot NOT null");
+            var storageKey = CreateStorageKey(Prefix_MaxBlockSize);
+            Console.WriteLine(storageKey == null
+                ? "=>GetMaxBlockSize storageKey null"
+                : "=>GetMaxBlockSize storageKey NOT null");
+            Console.WriteLine(snapshot.Storages == null
+                ? "=>GetMaxBlockSize snapshot.Storages null"
+                : "=>GetMaxBlockSize snapshot.Storages NOT null");
+            Console.WriteLine($"storageKey: {storageKey}");
+            try
+            {
+                var snapshotStorage = snapshot.Storages[storageKey];
+                Console.WriteLine(snapshotStorage == null
+                    ? "=>GetMaxBlockSize snapshotStorage null"
+                    : "=>GetMaxBlockSize snapshotStorage NOT null");
+                var snapshotStorageValue = snapshotStorage.Value;
+                Console.WriteLine(snapshotStorageValue == null
+                    ? "=>GetMaxBlockSize snapshotStorage null"
+                    : "=>GetMaxBlockSize snapshotStorage NOT null");
+                Console.WriteLine("=>No Error");
+                return BitConverter.ToUInt32(snapshotStorageValue, 0);
+            }
+            catch (Exception e)
+            {
+                 Console.WriteLine($"=>Error: {e}");
+                throw;
+            }
         }
 
         [ContractMethod(0_01000000, ContractParameterType.Integer, SafeMethod = true)]

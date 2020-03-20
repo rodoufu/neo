@@ -253,6 +253,14 @@ namespace Neo.Consensus
         /// <param name="txs">Ordered transactions</param>
         internal void EnsureMaxBlockSize(IEnumerable<Transaction> txs)
         {
+            if (Snapshot == null)
+            {
+                Console.WriteLine("=>EnsureMaxBlockSize Snapshot null");
+            }
+            else
+            {
+                Console.WriteLine("=>EnsureMaxBlockSize Snapshot NOT null");
+            }
             uint maxBlockSize = NativeContract.Policy.GetMaxBlockSize(Snapshot);
             uint maxTransactionsPerBlock = NativeContract.Policy.GetMaxTransactionsPerBlock(Snapshot);
 

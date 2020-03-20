@@ -1,3 +1,4 @@
+using System;
 using Akka.Actor;
 using Akka.DI.AutoFac;
 using Akka.DI.Core;
@@ -35,7 +36,7 @@ namespace Neo
         {
             get
             {
-                System.Console.WriteLine("static NeoContainer Instance");
+                Console.WriteLine("=>static NeoContainer Instance");
                 while (_instance == null)
                 {
                     Thread.Sleep(200);
@@ -60,6 +61,9 @@ namespace Neo
         /// </summary>
         public readonly ContainerBuilder Builder;
 
+        private string ActorAddress(string mailbox, Type theType) =>
+            $"{mailbox} {{ mailbox-type: \"{theType.AssemblyQualifiedName}\" }}";
+
         /// <summary>
         /// Create the container and also register the components.
         /// </summary>
@@ -67,16 +71,17 @@ namespace Neo
         {
             Builder = new ContainerBuilder();
 
-            Builder.RegisterInstance(this).SingleInstance().OnActivated(h => _instance = h.Instance).As<NeoContainer>();
+            Builder.RegisterInstance(this).SingleInstance().OnActivated(h => _instance = h.Instance)
+                .As<NeoContainer>();
 
             Builder.Register(c => ActorSystem.Create(nameof(NeoSystem),
                 $"akka {{ log-dead-letters = off }}" +
-                $"{BlockchainMailbox} {{ mailbox-type: \"{typeof(BlockchainMailbox).AssemblyQualifiedName}\" }}" +
-                $"{TaskManagerMailbox} {{ mailbox-type: \"{typeof(TaskManagerMailbox).AssemblyQualifiedName}\" }}" +
-                $"{RemoteNodeMailbox} {{ mailbox-type: \"{typeof(RemoteNodeMailbox).AssemblyQualifiedName}\" }}" +
-                $"{ProtocolHandlerMailbox} {{ mailbox-type: \"{typeof(ProtocolHandlerMailbox).AssemblyQualifiedName}\" }}" +
-                $"{ConsensusServiceMailbox} {{ mailbox-type: \"{typeof(ConsensusServiceMailbox).AssemblyQualifiedName}\" }}")
-            ).OnActivating(h =>
+                ActorAddress(BlockchainMailbox, typeof(BlockchainMailbox)) +
+                ActorAddress(TaskManagerMailbox, typeof(TaskManagerMailbox)) +
+                ActorAddress(RemoteNodeMailbox, typeof(RemoteNodeMailbox)) +
+                ActorAddress(ProtocolHandlerMailbox, typeof(ProtocolHandlerMailbox)) +
+                ActorAddress(ConsensusServiceMailbox, typeof(ConsensusServiceMailbox))
+            )).OnActivating(h =>
             {
                 h.Instance.UseAutofac(Container);
                 var propsResolver = new AutoFacDependencyResolver(Container, h.Instance);
@@ -191,11 +196,13 @@ namespace Neo
         {
             get
             {
-                System.Console.WriteLine("internal Blockchain Blockchain");
+                Console.WriteLine("=>internal Blockchain Blockchain");
                 while (!blockchainActorResolved)
                 {
+                    Console.WriteLine("=>internal Blockchain Blockchain - lock");
                     Thread.Sleep(200);
                 }
+
                 return Container.Resolve<Blockchain>();
             }
         }

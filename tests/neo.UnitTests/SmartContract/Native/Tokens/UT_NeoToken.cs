@@ -278,7 +278,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetNextBlockValidators1()
         {
-            using (ApplicationEngine engine = NativeContract.NEO.TestCall("getNextBlockValidators"))
+            using (ApplicationEngine engine = NativeContract.NEO.TestCall(testBlockchain.Container.Blockchain,
+                "getNextBlockValidators"))
             {
                 var result = engine.ResultStack.Peek();
                 result.GetType().Should().Be(typeof(VM.Types.Array));
@@ -319,7 +320,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetRegisteredValidators1()
         {
-            using (ApplicationEngine engine = NativeContract.NEO.TestCall("getRegisteredValidators"))
+            using (ApplicationEngine engine = NativeContract.NEO.TestCall(testBlockchain.Container.Blockchain,
+                "getRegisteredValidators"))
             {
                 var result = engine.ResultStack.Peek();
                 result.GetType().Should().Be(typeof(VM.Types.Array));
@@ -373,7 +375,8 @@ namespace Neo.UnitTests.SmartContract.Native.Tokens
         [TestMethod]
         public void TestGetValidators1()
         {
-            using (ApplicationEngine engine = NativeContract.NEO.TestCall("getValidators"))
+            using (ApplicationEngine engine = NativeContract.NEO.TestCall(testBlockchain.Container.Blockchain,
+                "getValidators"))
             {
                 var result = engine.ResultStack.Peek();
                 result.GetType().Should().Be(typeof(VM.Types.Array));

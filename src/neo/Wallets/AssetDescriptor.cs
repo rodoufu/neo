@@ -1,3 +1,4 @@
+using Neo.Ledger;
 using Neo.SmartContract;
 using Neo.VM;
 using System;
@@ -10,7 +11,7 @@ namespace Neo.Wallets
         public string AssetName;
         public byte Decimals;
 
-        public AssetDescriptor(UInt160 asset_id)
+        public AssetDescriptor(Blockchain blockchain, UInt160 asset_id)
         {
             byte[] script;
             using (ScriptBuilder sb = new ScriptBuilder())
@@ -19,7 +20,7 @@ namespace Neo.Wallets
                 sb.EmitAppCall(asset_id, "name");
                 script = sb.ToArray();
             }
-            using ApplicationEngine engine = ApplicationEngine.Run(script, extraGAS: 3_000_000);
+            using ApplicationEngine engine = ApplicationEngine.Run(blockchain, script, extraGAS: 3_000_000);
             if (engine.State.HasFlag(VMState.FAULT)) throw new ArgumentException();
             this.AssetId = asset_id;
             this.AssetName = engine.ResultStack.Pop().GetString();
