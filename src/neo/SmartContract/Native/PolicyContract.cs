@@ -47,7 +47,9 @@ namespace Neo.SmartContract.Native
 
         internal override bool Initialize(ApplicationEngine engine)
         {
+            Console.WriteLine("=>PolicyContract.Initialize 1");
             if (!base.Initialize(engine)) return false;
+            Console.WriteLine("=>PolicyContract.Initialize 2");
             engine.Snapshot.Storages.Add(CreateStorageKey(Prefix_MaxBlockSize), new StorageItem
             {
                 Value = BitConverter.GetBytes(1024u * 256u)
@@ -64,6 +66,7 @@ namespace Neo.SmartContract.Native
             {
                 Value = new UInt160[0].ToByteArray()
             });
+            Console.WriteLine("=>PolicyContract.Initialize 30");
             return true;
         }
 

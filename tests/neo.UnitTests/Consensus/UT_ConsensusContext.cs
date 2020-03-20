@@ -8,6 +8,7 @@ using Neo.Wallets;
 using System;
 using System.Linq;
 using Neo.Persistence;
+using Neo.SmartContract;
 
 namespace Neo.UnitTests.Consensus
 {
@@ -18,6 +19,7 @@ namespace Neo.UnitTests.Consensus
         ConsensusContext _context;
         KeyPair[] _validatorKeys;
         private TestBlockchain testBlockchain;
+        private SnapshotView snapshot;
 
         [TestInitialize]
         public void TestSetup()
@@ -43,10 +45,16 @@ namespace Neo.UnitTests.Consensus
 
             Assert.IsNotNull(testBlockchain.Container.ResolveBlockchainActor(
                 testBlockchain.Container.ResolveMemoryPool(), new MemoryStore()));
+            var blockchain = testBlockchain.Container.Blockchain;
             _context = testBlockchain.Container.ResolveConsensusContext(mockWallet.Object,
-                testBlockchain.Container.Blockchain.Store);
+                blockchain.Store);
             _context.Validators = _validatorKeys.Select(u => u.PublicKey).ToArray();
             _context.Reset(0);
+
+            snapshot = _context.Snapshot;
+            var applicationEngine = new ApplicationEngine(blockchain, TriggerType.Application, new Block(),
+                snapshot, 0L, testMode: true);
+            NativeContract.Policy.Initialize(applicationEngine);
         }
 
         [TestCleanup]
@@ -66,7 +74,7 @@ namespace Neo.UnitTests.Consensus
 
             // All txs included
 
-            var max = (int)NativeContract.Policy.GetMaxTransactionsPerBlock(_context.Snapshot);
+            var max = (int)NativeContract.Policy.GetMaxTransactionsPerBlock(snapshot);
             var txs = new Transaction[max];
 
             for (int x = 0; x < max; x++) txs[x] = CreateTransactionWithSize(100);
@@ -88,7 +96,7 @@ namespace Neo.UnitTests.Consensus
 
             // Exceed txs number, just MaxTransactionsPerBlock included
 
-            var max = (int)NativeContract.Policy.GetMaxTransactionsPerBlock(_context.Snapshot);
+            var max = (int)NativeContract.Policy.GetMaxTransactionsPerBlock(snapshot);
             var txs = new Transaction[max + 1];
 
             for (int x = 0; x < max; x++) txs[x] = CreateTransactionWithSize(100);
