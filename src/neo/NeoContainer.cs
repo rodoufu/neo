@@ -90,7 +90,7 @@ namespace Neo
             Builder.Register((c, p) => new NeoSystem(
                 c.Resolve<NeoContainer>(),
                 p.Named<IStore>("store")
-            )).As<NeoSystem>();
+            )).SingleInstance().As<NeoSystem>();
 
             Builder.Register((c, p) => new MemoryPool(
                 c.Resolve<NeoContainer>(),
@@ -184,10 +184,15 @@ namespace Neo
         public MemoryPool ResolveMemoryPool(int capacity = 100) =>
             Container.Resolve<MemoryPool>(new NamedParameter("capacity", capacity));
 
-        private Blockchain ResolveBlockchain(MemoryPool memoryPool, IStore store) => Container.Resolve<Blockchain>(
-            new NamedParameter("memoryPool", memoryPool),
-            new NamedParameter("store", store)
-        );
+        private Blockchain ResolveBlockchain(MemoryPool memoryPool, IStore store)
+        {
+            var resolveBlockchain = Container.Resolve<Blockchain>(
+                new NamedParameter("memoryPool", memoryPool),
+                new NamedParameter("store", store)
+            );
+            blockchainActorResolved = true;
+            return resolveBlockchain;
+        }
 
         /// <summary>
         /// Should be used only after the NeoContainer is created.
@@ -202,7 +207,6 @@ namespace Neo
                     Console.WriteLine("=>internal Blockchain Blockchain - lock");
                     Thread.Sleep(200);
                 }
-
                 return Container.Resolve<Blockchain>();
             }
         }
@@ -210,16 +214,20 @@ namespace Neo
         public IActorRef ResolveBlockchainActor(MemoryPool memoryPool, IStore store)
         {
             ResolveBlockchain(memoryPool, store);
-            return BlockchainActor;
+            var resolveBlockchainActor = BlockchainActor;
+            return resolveBlockchainActor;
         }
 
         public IActorRef BlockchainActor
         {
             get
             {
-                var blockchainActor = Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
-                blockchainActorResolved = true;
-                return blockchainActor;
+                while (!blockchainActorResolved)
+                {
+                    Console.WriteLine("=>internal Blockchain Blockchain - lock");
+                    Thread.Sleep(200);
+                }
+                return Container.ResolveNamed<IActorRef>(typeof(Blockchain).Name);
             }
         }
 

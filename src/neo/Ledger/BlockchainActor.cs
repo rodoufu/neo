@@ -11,12 +11,16 @@ namespace Neo.Ledger
         public sealed class BlockchainActor : UntypedActor
         {
             private readonly Blockchain blockchain;
+            private bool started;
 
             public BlockchainActor(Blockchain blockchain)
             {
                 this.blockchain = blockchain;
+                System.Console.WriteLine("=>Starting Blockchain Actor");
                 lock (blockchain)
                 {
+                    if (started) return;
+                    started = true;
                     blockchain.header_index.AddRange(blockchain.View.HeaderHashList.Find().OrderBy(p => (uint) p.Key)
                         .SelectMany(p => p.Value.Hashes));
                     blockchain.stored_header_count += (uint) blockchain.header_index.Count;
@@ -38,12 +42,15 @@ namespace Neo.Ledger
                         }
                     }
 
+                    System.Console.WriteLine($"=>blockchain.header_index.Count: {blockchain.header_index.Count}");
                     if (blockchain.header_index.Count == 0)
                     {
+                        System.Console.WriteLine("=>BlockchainActor persist");
                         blockchain.Persist(GenesisBlock, Context);
                     }
                     else
                     {
+                        System.Console.WriteLine("=>BlockchainActor UpdateCurrentSnapshot");
                         blockchain.UpdateCurrentSnapshot();
                         blockchain.MemPool.LoadPolicy(blockchain.currentSnapshot);
                     }

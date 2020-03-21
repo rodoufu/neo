@@ -12,6 +12,7 @@ using Neo.VM;
 using Neo.Wallets;
 using System;
 using System.Numerics;
+using Neo.Persistence;
 
 namespace Neo.UnitTests.Network.P2P.Payloads
 {
@@ -20,12 +21,17 @@ namespace Neo.UnitTests.Network.P2P.Payloads
     {
         Transaction uut;
         private TestBlockchain testBlockchain;
+        private Blockchain blockchain;
+        private SnapshotView snapshot;
 
         [TestInitialize]
         public void TestSetup()
         {
             testBlockchain = new TestBlockchain();
             testBlockchain.InitializeMockNeoSystem();
+            blockchain = testBlockchain.Container.Blockchain;
+            snapshot = blockchain.GetSnapshot();
+
             uut = new Transaction();
         }
 
@@ -88,8 +94,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         {
             var walletA = TestUtils.GenerateTestWallet();
             var walletB = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             using (var unlockA = walletA.Unlock("123"))
             using (var unlockB = walletB.Unlock("123"))
@@ -178,8 +182,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContractDetailed()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             using (var unlock = wallet.Unlock("123"))
             {
@@ -297,8 +299,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_Global()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -330,7 +330,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 {
                     // self-transfer of 1e-8 GAS
                     System.Numerics.BigInteger value = (new BigDecimal(1, 8)).Value;
-                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash, acc.ScriptHash, value);
+                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash,
+                        acc.ScriptHash, value);
                     sb.Emit(OpCode.THROWIFNOT);
                     script = sb.ToArray();
                 }
@@ -344,8 +345,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(blockchain,
-                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(blockchain, script, acc.ScriptHash,
+                    new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -393,8 +394,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CurrentHash_GAS()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -426,7 +425,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 {
                     // self-transfer of 1e-8 GAS
                     System.Numerics.BigInteger value = (new BigDecimal(1, 8)).Value;
-                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash, acc.ScriptHash, value);
+                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash,
+                        acc.ScriptHash, value);
                     sb.Emit(OpCode.THROWIFNOT);
                     script = sb.ToArray();
                 }
@@ -441,8 +441,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(blockchain,
-                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(blockchain, script, acc.ScriptHash,
+                    new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -490,8 +490,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CalledByEntry_Plus_GAS()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -542,8 +540,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(blockchain,
-                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(blockchain, script, acc.ScriptHash,
+                    new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -591,7 +589,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CurrentHash_NEO_FAULT()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -621,7 +618,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 {
                     // self-transfer of 1e-8 GAS
                     System.Numerics.BigInteger value = (new BigDecimal(1, 8)).Value;
-                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash, acc.ScriptHash, value);
+                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash,
+                        acc.ScriptHash, value);
                     sb.Emit(OpCode.THROWIFNOT);
                     script = sb.ToArray();
                 }
@@ -640,8 +638,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 // due to lack of a valid witness validation
                 Transaction tx = null;
                 Assert.ThrowsException<InvalidOperationException>(() =>
-                    tx = wallet.MakeTransaction(testBlockchain.Container.Blockchain,
-                        script, acc.ScriptHash, new TransactionAttribute[0], cosigners));
+                    tx = wallet.MakeTransaction(blockchain, script, acc.ScriptHash,
+                        new TransactionAttribute[0], cosigners));
                 Assert.IsNull(tx);
             }
         }
@@ -650,8 +648,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_CurrentHash_NEO_GAS()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -683,7 +679,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 {
                     // self-transfer of 1e-8 GAS
                     System.Numerics.BigInteger value = (new BigDecimal(1, 8)).Value;
-                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash, acc.ScriptHash, value);
+                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash,
+                        acc.ScriptHash, value);
                     sb.Emit(OpCode.THROWIFNOT);
                     script = sb.ToArray();
                 }
@@ -698,8 +695,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
 
                 // using this...
 
-                var tx = wallet.MakeTransaction(blockchain,
-                    script, acc.ScriptHash, new TransactionAttribute[0], cosigners);
+                var tx = wallet.MakeTransaction(blockchain, script, acc.ScriptHash,
+                    new TransactionAttribute[0], cosigners);
 
                 Assert.IsNotNull(tx);
                 Assert.IsNull(tx.Witnesses);
@@ -752,7 +749,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         public void FeeIsSignatureContract_TestScope_NoScopeFAULT()
         {
             var wallet = TestUtils.GenerateTestWallet();
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))
@@ -782,7 +778,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 {
                     // self-transfer of 1e-8 GAS
                     System.Numerics.BigInteger value = (new BigDecimal(1, 8)).Value;
-                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash, acc.ScriptHash, value);
+                    sb.EmitAppCall(NativeContract.GAS.Hash, "transfer", acc.ScriptHash,
+                        acc.ScriptHash, value);
                     sb.Emit(OpCode.THROWIFNOT);
                     script = sb.ToArray();
                 }
@@ -796,8 +793,8 @@ namespace Neo.UnitTests.Network.P2P.Payloads
                 // expects FAULT on execution of 'transfer' Application script
                 // due to lack of a valid witness validation
                 Transaction tx = null;
-                Assert.ThrowsException<InvalidOperationException>(() => tx = wallet.MakeTransaction(
-                    testBlockchain.Container.Blockchain, script, acc.ScriptHash, attributes, cosigners));
+                Assert.ThrowsException<InvalidOperationException>(() => tx = wallet.MakeTransaction(blockchain, script,
+                    acc.ScriptHash, attributes, cosigners));
                 Assert.IsNull(tx);
             }
         }
@@ -805,7 +802,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
         [TestMethod]
         public void Transaction_Reverify_Hashes_Length_Unequal_To_Witnesses_Length()
         {
-            var snapshot = testBlockchain.Container.Blockchain.GetSnapshot();
             Transaction txSimple = new Transaction
             {
                 Version = 0x00,
@@ -1011,8 +1007,6 @@ namespace Neo.UnitTests.Network.P2P.Payloads
             cosigner.Scopes.Should().Be(WitnessScope.Global);
 
             var wallet = TestUtils.GenerateTestWallet();
-            var blockchain = testBlockchain.Container.Blockchain;
-            var snapshot = blockchain.GetSnapshot();
 
             // no password on this wallet
             using (var unlock = wallet.Unlock(""))

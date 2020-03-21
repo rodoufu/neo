@@ -1,4 +1,5 @@
 using System;
+using Neo.Ledger;
 using Neo.Persistence;
 
 namespace Neo.UnitTests
@@ -7,12 +8,13 @@ namespace Neo.UnitTests
     {
         private readonly NeoSystem _neoSystem;
         private readonly NeoContainer _container;
+        private readonly MemoryPool _memoryPool;
 
         public TestBlockchain()
         {
             _container = new NeoContainer();
-            var memoryPool = _container.ResolveMemoryPool();
-            var blockchainActor = _container.ResolveBlockchainActor(memoryPool, new MemoryStore());
+            _memoryPool = _container.ResolveMemoryPool();
+            var blockchainActor = _container.ResolveBlockchainActor(_memoryPool, new MemoryStore());
             var _blockchainActorPath = blockchainActor.Path;
 
             // Ensure that blockchain is loaded
@@ -25,5 +27,6 @@ namespace Neo.UnitTests
 
         public NeoSystem NeoSystem => _neoSystem;
         public NeoContainer Container => _container;
+        public MemoryPool MemoryPool=> _memoryPool;
     }
 }

@@ -51,7 +51,7 @@ namespace Neo.Ledger
             Transactions = new[] { DeployNativeContracts() }
         };
 
-        private readonly static Script onPersistNativeContractScript;
+        private static readonly Script onPersistNativeContractScript;
         private const int MaxTxToReverifyPerIdle = 10;
         private readonly List<UInt256> header_index = new List<UInt256>();
         private uint stored_header_count = 0;
@@ -66,7 +66,17 @@ namespace Neo.Ledger
         public uint Height => currentSnapshot.Height;
         public uint HeaderHeight => currentSnapshot.HeaderHeight;
         public UInt256 CurrentBlockHash => currentSnapshot.CurrentBlockHash;
-        public UInt256 CurrentHeaderHash => currentSnapshot.CurrentHeaderHash;
+        public UInt256 CurrentHeaderHash
+        {
+            get
+            {
+                Console.WriteLine("=>CurrentHeaderHash");
+                Console.WriteLine(
+                    "=>CurrentHeaderHash currentSnapshot: " +
+                    (currentSnapshot != null ? "NOT " : "") + "null");
+                return currentSnapshot.CurrentHeaderHash;
+            }
+        }
 
         private readonly NeoContainer neoContainer;
         private IActorRef localNodeActor => neoContainer.LocalNodeActor;
